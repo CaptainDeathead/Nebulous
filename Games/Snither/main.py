@@ -1,11 +1,15 @@
 import pygame as pg
 
+from Console.UI.pygame_gui import Button
+
 from time import time
 from random import randint
 
 from typing import Sequence, List, Tuple, Dict
 
 pg.init()
+
+FONTS_PATH = "./Console/UI/Fonts"
 
 class DIRECTION:
     UP    = 0
@@ -19,11 +23,13 @@ class DIRECTION:
 class Snake:
     PART_SIZE = 50
 
-    def __init__(self, drawto_surf: pg.Surface, head: Sequence[int]) -> None:
+    def __init__(self, drawto_surf: pg.Surface, head: Sequence[int], color: pg.Color) -> None:
         self.drawto_surf = drawto_surf
 
         self.direction = DIRECTION.RANDOM
         self.body = [head]
+
+        self.color = color
 
         self.grow()
 
@@ -74,6 +80,50 @@ class Screen(pg.Surface):
     @property
     def pos(self) -> Sequence[int]: return (self.positioning_rect.x, self.positioning_rect.y)
 
+class Player:
+    def __init__(self) -> None:
+        ...
+
+class MainMenu:
+    def __init__(self, display_surf: pg.Surface) -> None:
+        self.display_surf = display_surf
+
+        self.width = display_surf.width
+        self.height = display_surf.height
+
+        self.fonts = {
+            "small": pg.font.Font(f"{FONTS_PATH}/PressStart2P.ttf", 20),
+            "medium": pg.font.Font(f"{FONTS_PATH}/PressStart2P.ttf", 30),
+            "large": pg.font.Font(f"{FONTS_PATH}/PressStart2P.ttf", 40)
+        }
+
+        title_lbl = self.fonts["large"].render("Snither", True, (255, 255, 255))
+        self.display_surf.blit(title_lbl, (self.width // 2, 20))
+
+    def draw_player_buttons(self) -> None:
+        players_box_w = 400
+        players_box = pg.Rect(self.width // 2 - players_box_w // 2, self.height // 2 - players_box_w // 2, players_box_w, players_box_w)
+        pg.draw.rect(self.display_surf, (150, 150, 150), players_box)
+
+        btn_width = 300
+        btn_height = 100
+        btn_padding = 20
+
+        btn_x = self.width // 2 - btn_width // 2
+
+        curr_y = btn_padding
+        for player_index in range(4):
+            btn_rect = pg.Rect(btn_x, curr_y, btn_width, btn_height)
+            pg.draw.rect(self.display_surf, (200, 200, 200), btn_rect)
+
+            player_ready_text_start = self.fonts["small"].render(f"Player {player_index + 1} - ", True, (255, 255, 255))
+            player_ready_text_end = self.fonts["small"].render(f"{self.players[player_index].ready_text}", True, self.players[player_index].ready_color)
+
+            self.display_surf.blit(player_ready_text_start, (self.width // 2 - (player_ready_text_start.width + player_ready_text_end.width) // 2, curr_y))
+            self.display_surf.blit(player_ready_text_end, (self.width // 2 - (player_ready_text_start.width + player_ready_text_end.width) // 2 + player_ready_text_start.width, curr_y))
+
+            curr_y += btn_height + btn_padding
+
 class Snither:
     PYGAME_INFO: any = pg.display.Info()
     WIDTH: int = PYGAME_INFO.current_w
@@ -120,3 +170,12 @@ class Snither:
                 screens.append(screen_bottom_right)
 
                 return screens
+
+    def main(self) -> None:
+
+        while 1:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    pg.quit()
+                    exit()
+            
