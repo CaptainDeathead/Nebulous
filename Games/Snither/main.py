@@ -129,13 +129,17 @@ class Snither:
     WIDTH: int = PYGAME_INFO.current_w
     HEIGHT: int = PYGAME_INFO.current_h
 
-    def __init__(self, num_splitscreen_players: int = 1) -> None:
-        self.num_screens = num_splitscreen_players
+    def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object) -> None:
+        self.display_surf = display_surf
+        self.console_update = console_update
+        self.get_num_players = get_num_players
 
-        self.display_surf = pg.display.set_mode((self.WIDTH, self.HEIGHT), pg.FULLSCREEN | pg.DOUBLEBUFF | pg.HWSURFACE)
+        self.num_screens = self.get_num_players()
+
         self.screens = self.setup_screens()
-        
         self.clock = pg.time.Clock()
+
+        self.main()
 
     def setup_screens(self) -> List[Screen]:
         def three_screens() -> List[Screen]:
@@ -172,10 +176,8 @@ class Snither:
                 return screens
 
     def main(self) -> None:
-
         while 1:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     pg.quit()
                     exit()
-            

@@ -14,7 +14,7 @@ cat <<EOF > ~/.xinitrc
 xset -dpms  # Disable power management
 xset s off  # Disable screen blanking
 xset s noblank
-exec /usr/bin/python3 /home/pi/your_script.py
+exec /usr/bin/python3 /home/consoleuser/Console/main.py
 EOF
 chmod +x ~/.xinitrc
 
