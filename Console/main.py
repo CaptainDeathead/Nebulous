@@ -71,9 +71,7 @@ class Console:
         self.cartridge_loaded = False
 
     def load_cartidge(self) -> None:
-        # TODO: spi=None is just for testing!!!
-        spi = None
-        CartridgeLoader(spi, self.on_title_launch).load_cartridge()
+        CartridgeLoader(self.on_title_launch).load_cartridge()
 
     def main(self) -> None:
         while not self.cartridge_loaded:

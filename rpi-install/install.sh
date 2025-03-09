@@ -6,7 +6,10 @@ if [ "$EUID" -eq 0 ]; then
 fi
 
 echo "Installing required packages..."
-sudo apt update && sudo apt install -y xserver-xorg xinit x11-xserver-utils
+sudo apt update && sudo apt install -y xserver-xorg xinit x11-xserver-utils python3 python3-pip
+
+echo "Installing pip modules..."
+pip install pygame-ce
 
 echo "Creating ~/.xinitrc..."
 cat <<EOF > ~/.xinitrc
@@ -22,6 +25,9 @@ echo "Modifying ~/.bash_profile to start X server on boot..."
 if ! grep -q "startx" ~/.bash_profile; then
     echo -e "\nif [ -z \"\$DISPLAY\" ] && [ \"\$(tty)\" = \"/dev/tty1\" ]; then\n    startx\nfi" >> ~/.bash_profile
 fi
+
+echo "Enabling spi mode..."
+sudo raspi-config nonint do_spi 0
 
 echo "Enabling console autologin for user..." # this means no password is required, so it goes straight into console, where x server is created
 sudo raspi-config nonint do_boot_behaviour B2

@@ -19,9 +19,15 @@ from time import sleep
 class CartridgeLoader:
     SD_BLOCK_SIZE = 512
 
-    def __init__(self, spi: SpiDev, on_title_launch: object) -> None:
-        self.spi = spi
+    def __init__(self, on_title_launch: object) -> None:
         self.on_title_launch = on_title_launch
+
+        try:
+            self.spi = SpiDev()
+            self.spi.open(0, 1) # SPI Bus 0 CE1 (GPIO 7)
+            self.spi.max_speed_hz = 4_000_000 # 4 MHz
+        except Exception as e:
+            logging.error(f"Failed to initialize cartridge (sd) SPI interface!!! Error: {e}! Assuming this is a non-console test so continuing...")
 
     def send_command(self, cmd: int, arg: int) -> bytes:
         # Send SPI command to the SD card

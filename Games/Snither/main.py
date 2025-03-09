@@ -415,7 +415,7 @@ class Snither:
         4: (0, 255, 255) # Purple
     }
 
-    NUM_SNAKES = 4
+    NUM_SNAKES = 15
     NUM_APPLES = 100
     PLAYING_FIELD_SIZE = 4000
     STEP_INTERVAL = 0.15
