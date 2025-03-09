@@ -53,7 +53,7 @@ class Console:
         self.WIDTH = self.pygame_info.current_w
         self.HEIGHT = self.pygame_info.current_h
 
-        self.screen = pg.display.set_mode((self.WIDTH, self.HEIGHT), pg.FULLSCREEN | pg.DOUBLEBUF | pg.HWSURFACE)
+        self.screen = pg.display.set_mode((self.WIDTH, self.HEIGHT), pg.FULLSCREEN | pg.DOUBLEBUF | pg.HWSURFACE, display=1)
         self.clock = pg.time.Clock()
 
     def init_menu_interface(self) -> None:
@@ -116,7 +116,7 @@ class Console:
 
         self.cartridge_loaded = True
 
-        ConsoleEntry(self.screen, self.update, self.controller_manager.get_num_players)
+        ConsoleEntry(self.screen, self.update, self.controller_manager.get_num_players, self.controller_manager.controllers)
 
 if __name__ == "__main__":
     # Where it all begins...
