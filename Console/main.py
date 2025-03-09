@@ -62,7 +62,7 @@ class Console:
         font = pg.font.Font(f"{FONTS_PATH}/PressStart2P.ttf", 30)
 
         self.enter_cartridge_surf = font.render("Enter game cartridge...", True, (255, 255, 255))
-        self.enter_cartridge_rect = pg.Rect(self.WIDTH // 2 - self.enter_cartridge_surf.get_width() // 2, self.HEIGHT // 2 - self.enter_cartridge_surf.get_height() // 2, self.enter_cartridge_surf.get_width(), self.enter_cartridge_surf.get_height())
+        self.enter_cartridge_rect = pg.Rect(self.WIDTH // 2 - self.enter_cartridge_surf.width // 2, self.HEIGHT // 2 - self.enter_cartridge_surf.height // 2, self.enter_cartridge_surf.width, self.enter_cartridge_surf.height)
         self.enter_cartridge_vel = [random.choice([3, -3]), random.choice([3, -3])]
 
     def init_cartridges(self) -> None:
