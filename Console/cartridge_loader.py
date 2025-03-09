@@ -2,6 +2,7 @@ import os
 import sys
 import tarfile
 import logging
+import importlib
 
 try:
     from spidev import SpiDev
@@ -93,11 +94,13 @@ class CartridgeLoader:
             for i in range(1, 100): # Read first 100 sectors (50KB)
                 zip_data += self.read_sector(i)
 
-            tmp_game_path = f"/tmp/{game_name}/"
+            tmp_game_path = f"/tmp/Games/{game_name}/"
 
-            if os.path.exists(tmp_game_path):
+            if os.path.exists('/tmp/Games'):
                 logging.debug("Cartridge already has an entry in /tmp! Removing it...")
-                rmtree(tmp_game_path, ignore_errors=True)
+                rmtree('/tmp/Games', ignore_errors=True)
+
+            os.mkdir('/tmp/Games')
 
             xz_buffer = BytesIO(zip_data)
 
@@ -109,8 +112,8 @@ class CartridgeLoader:
             
             logging.info("Invoking ConsoleEntry from consolemain in the unzipped game...")
             try:
-                from consolemain import ConsoleEntry
-                self.on_title_launch(ConsoleEntry)
+                consolemain = importlib.import_module(f"Games.{game_name}.consolemain")
+                self.on_title_launch(consolemain.ConsoleEntry)
             except:
                 raise Exception("Failed to import ConsoleEntry from consolemain!")
         else:
