@@ -29,6 +29,10 @@ fi
 echo "Enabling spi mode..."
 sudo raspi-config nonint do_spi 0
 
+echo "Enabling pigpiod..."
+sudo systemctl enable pigpiod
+sudo systemctl start pigpiod
+
 echo "Adding user to gpio group..."
 sudo adduser consoleuser gpio
 
