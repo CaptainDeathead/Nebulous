@@ -48,17 +48,18 @@ class Event:
         self.events.append(event)
 
 class Controller:
-    def __init__(self, port: int, left_channel: MCP3008, right_channel: MCP3008) -> None:
+    def __init__(self, port: int, adc: MCP3008, left_channel: int, right_channel: int) -> None:
         self.port = port 
         self.plugged_in = False
         
+        self.adc = adc
         self.left_channel = left_channel
         self.right_channel = right_channel
 
         self.event = Event()
 
-    def split_channel_value(channel: MCP3008, value: float, tolerance: float = 0.05) -> bool:
-        ch_value = channel.value
+    def split_channel_value(self, channel: int, value: float, tolerance: float = 0.05) -> bool:
+        ch_value = self.adc.channel(channel)
 
         if value > ch_value - tolerance and value < ch_value + tolerance:
             return True
