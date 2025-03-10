@@ -9,7 +9,7 @@ echo "Installing required packages..."
 sudo apt update && sudo apt install -y xserver-xorg xinit x11-xserver-utils python3 python3-pip
 
 echo "Installing pip modules..."
-pip install pygame-ce numpy
+pip install pygame-ce numpy --break-system-packages
 
 echo "Creating ~/.xinitrc..."
 cat <<EOF > ~/.xinitrc
@@ -17,7 +17,7 @@ cat <<EOF > ~/.xinitrc
 xset -dpms  # Disable power management
 xset s off  # Disable screen blanking
 xset s noblank
-exec /usr/bin/python3 /home/consoleuser/Console/main.py
+exec /usr/bin/python3 /home/consoleuser/Retro-Console/Console/main.py
 EOF
 chmod +x ~/.xinitrc
 
