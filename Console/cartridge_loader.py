@@ -6,6 +6,7 @@ import importlib
 
 try:
     from spidev import SpiDev
+    TESTING = False
 except:
     TESTING = True
     SpiDev = None
