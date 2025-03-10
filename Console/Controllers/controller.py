@@ -57,7 +57,7 @@ class Controller:
 
         self.event = Event()
 
-    def split_channel_value(channel: MCP3008, value: float, tolerance: float = 0.05) -> bool:
+    def split_channel_value(self, channel: MCP3008, value: float, tolerance: float = 0.05) -> bool:
         ch_value = channel.value
 
         if value > ch_value - tolerance and value < ch_value + tolerance:
