@@ -12,7 +12,7 @@ class ControllerManager:
     NUM_CONTROLLER_PORTS = 4
 
     def __init__(self) -> None:
-        self.controllers = [Controller(i, MCP3008(select_pin=8), i*2, i*2+1) for i in range(self.NUM_CONTROLLER_PORTS)]
+        self.controllers = [Controller(i, MCP3008(channel=i*2, select_pin=8), MCP3008(channel=i*2+1, select_pin=8)) for i in range(self.NUM_CONTROLLER_PORTS)]
 
     def get_num_players(self) -> int:
         num_players = 0
