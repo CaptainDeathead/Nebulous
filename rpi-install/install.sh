@@ -9,7 +9,7 @@ echo "Installing required packages..."
 sudo apt update && sudo apt install -y xserver-xorg xinit x11-xserver-utils python3 python3-pip
 
 echo "Installing pip modules..."
-pip install pygame-ce
+pip install pygame-ce numpy
 
 echo "Creating ~/.xinitrc..."
 cat <<EOF > ~/.xinitrc

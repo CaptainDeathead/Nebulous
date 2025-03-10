@@ -2,6 +2,7 @@ import pygame as pg
 
 from Console.UI.pygame_gui import Button
 from Console.Controllers.controller import Controller, CONTROLS
+from Console.sound import generate_square_wave, generate_sine_wave
 
 from time import time
 from random import randint
@@ -46,7 +47,7 @@ class Snake:
     PART_SIZE = 50
     ACTIVATION_PERCENT = 0.5
 
-    def __init__(self, head: Sequence[int], game_board: List[List[int]], color: pg.Color, apples: List[Apple]) -> None:
+    def __init__(self, head: Sequence[int], game_board: List[List[int]], color: pg.Color, apples: List[Apple], is_player: bool) -> None:
         self.game_board = game_board
         self.direction = DIRECTION.random()
         self.body = [head]
@@ -54,10 +55,13 @@ class Snake:
         self.color = color
         self.og_color = color
         self.apples = apples
+        self.is_player = is_player
 
         self.game_board[self.y][self.x] = 1
         self.last_update_direction = self.direction
         self.dead = False
+
+        self.grow_sound = generate_sine_wave(500, 0.2, volume=0.15)
 
         self.grow()
         self.grow()
@@ -105,7 +109,7 @@ class Snake:
         for apple in self.apples:
             if self.x == apple.x and self.y == apple.y:
                 apples_to_remove.append(apple)
-                self.grow()
+                self.grow(play_sound=True)
 
         for dead_apple in apples_to_remove:
             self.apples.remove(dead_apple)
@@ -116,12 +120,15 @@ class Snake:
         self.dead = True
         self.color = pg.Color(150, 150, 150)
 
+        if self.is_player:
+            generate_square_wave(50, 0.2, volume=0.04).play()
+
         for part in self.body:
             if part[0] != 0 and part[0] != len(self.game_board) - 1 and part[1] != 0 and part[1] != len(self.game_board) - 1:
                 self.game_board[part[1]][part[0]] = 0
                 self.apples.append(Apple(part[0], part[1]))
 
-    def grow(self) -> None:
+    def grow(self, play_sound: bool = False) -> None:
         match self.direction:
             case DIRECTION.UP:    self.body.append([self.tail[0],     self.tail[1] + 1]) # Push down
             case DIRECTION.RIGHT: self.body.append([self.tail[0] - 1, self.tail[1]]) # Push left
@@ -129,6 +136,10 @@ class Snake:
             case DIRECTION.LEFT:  self.body.append([self.tail[0] + 1, self.tail[1]]) # Push right
 
         self.game_board[self.tail[1]][self.tail[0]] = 1
+
+        if play_sound and self.is_player:
+            self.grow_sound.play()
+            generate_sine_wave(500, 0.2, volume=0.15).play()
 
     def draw(self, surface: pg.Surface, surface_rect: pg.Rect) -> None:
         for part in self.body:
@@ -282,7 +293,7 @@ class Player:
         else: return pg.Color(255, 0, 0)
 
 class MainMenu:
-    TIMER_LENGTH = 4
+    TIMER_LENGTH = 6
 
     def __init__(self, display_surf: pg.Surface, console_update: object, controllers: List[Controller]) -> None:
         self.display_surf = display_surf
@@ -309,12 +320,13 @@ class MainMenu:
 
 
         self.timer_active = False
-        self.timer_time = self.TIMER_LENGTH
         self.timer_start_time = time()
         self.start_game = False
+        self.last_timer_time = 0
+        self.timer_first_beep = True
 
         self.timer_start_lbl = self.fonts["medium"].render("Game starting in  ...", True, (255, 255, 255))
-        self.timer_end_lbls = [self.fonts["medium"].render(f"                 {i}", True, (0, 0, 255)) for i in range(self.timer_time, -1, -1)]
+        self.timer_end_lbls = [self.fonts["medium"].render(f"                 {i}", True, (0, 0, 255)) for i in range(1, self.TIMER_LENGTH + 1)]
 
         self.players[0].ready = True
         self.players[0].controller.plugged_in = True
@@ -356,8 +368,8 @@ class MainMenu:
 
     def reset_timer(self) -> None:
         self.timer_active = False
-        self.timer_time = self.TIMER_LENGTH
-        self.timer_last_update = time()
+        self.timer_start_time = time()
+        self.timer_first_beep = True
 
     def check_game_start(self) -> None:
         for player in self.players:
@@ -365,10 +377,10 @@ class MainMenu:
                 self.reset_timer()
                 return
             
-            self.timer_time = time() - self.timer_start_time
+            timer_time = self.TIMER_LENGTH - (time() - self.timer_start_time)
             self.timer_active = True
 
-            if self.timer_time >= self.TIMER_LENGTH:
+            if timer_time <= 1:
                 self.start_game = True
 
     def main(self) -> None:
@@ -379,6 +391,9 @@ class MainMenu:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     pass
+                elif event.type == pg.KEYDOWN:
+                    if event.key == pg.K_SPACE:
+                        self.players[0].ready = not self.players[0].ready
 
             for i, controller in enumerate(self.controllers):
                 for event in controller.event.get():
@@ -390,7 +405,17 @@ class MainMenu:
             self.display_surf.blit(self.title_lbl, (self.width // 2 - self.title_lbl.width // 2, 100))
             
             if self.timer_active:
-                curr_time_int = max(0, min(int(round(self.timer_time, 0)), len(self.timer_end_lbls) - 1))
+                timer_time = self.TIMER_LENGTH - (time() - self.timer_start_time)
+
+                if self.last_timer_time != int(round(timer_time, 0)):
+                    if self.timer_first_beep:
+                        self.timer_first_beep = False
+                    else:
+                        generate_sine_wave(800, 0.2, volume=0.15).play()
+
+                    self.last_timer_time = int(round(timer_time, 0))
+
+                curr_time_int = max(0, min(int(round(timer_time, 0)), len(self.timer_end_lbls) - 1))
                 self.display_surf.blit(self.timer_start_lbl, (self.width // 2 - self.timer_start_lbl.width // 2, self.height - 200))
                 self.display_surf.blit(self.timer_end_lbls[curr_time_int-1], (self.width // 2 - self.timer_start_lbl.width // 2, self.height - 200))
             else:
@@ -447,7 +472,7 @@ class Snither:
         self.apples = [Apple(randint(1, len(self.game_board) - 2), randint(1, len(self.game_board) - 2)) for _ in range(self.NUM_APPLES)]
 
         self.snakes = [Snake([randint(5, len(self.game_board) - 6), randint(5, len(self.game_board) - 6)],
-                             self.game_board, self.SNAKE_COLORS[randint(0, len(self.SNAKE_COLORS) - 1)], self.apples) for _ in range(self.NUM_SNAKES)]
+                             self.game_board, self.SNAKE_COLORS[randint(0, len(self.SNAKE_COLORS) - 1)], self.apples, i <= self.num_screens - 1) for i in range(self.NUM_SNAKES)]
 
         self.last_snake_move_time = time()
 
@@ -547,21 +572,29 @@ class Snither:
         cont_lbl = self.main_menu.fonts["large"].render("Press A to continue...", True, (255, 255, 255))
         cont_lbl.blit(self.main_menu.fonts["large"].render("      A", True, (0, 255, 0)))
 
-        acc_dt = 0
+        start_time = time()
+
+        def reset_game() -> None:
+            if time() - start_time < 5: return
+
+            self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers)
 
         while 1:
-            acc_dt += self.clock.tick(60)
+            self.clock.tick(60)
 
             for event in pg.event.get():
-                pass
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_SPACE:
+                        reset_game()
+                        return
 
-            if acc_dt >= 5:
+            if time() - start_time >= 5:
                 self.display_surf.blit(cont_lbl, (self.WIDTH // 2 - cont_lbl.width // 2, curr_y + 40))
 
                 for controller in self.controllers:
                     for event in controller.event.get():
                         if event.type == CONTROLS.ABXY.A:
-                            self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers)
+                            reset_game()
                             return
 
             self.console_update()
