@@ -34,7 +34,7 @@ class CartridgeLoader:
         # Send SPI command to the SD card
         # This is absolute majic that is definitly not worth the time to learn
         cmd_packet = [0x40 | cmd] + [(arg >> (8 * i)) & 0xFF for i in range(3, -1, -1)] + [0x95]
-        self.xfer2(cmd_packet)
+        self.spi.xfer2(cmd_packet)
         sleep(0.1) # Allow time for a response
 
         return self.spi.xfer2([0xFF]) # Get response

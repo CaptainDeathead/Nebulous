@@ -34,7 +34,8 @@ sudo systemctl enable pigpiod
 sudo systemctl start pigpiod
 
 echo "Adding user to gpio group..."
-sudo adduser consoleuser gpio
+snewgrp spi
+udo adduser consoleuser gpio
 
 echo "Enabling console autologin for user..." # this means no password is required, so it goes straight into console, where x server is created
 sudo raspi-config nonint do_boot_behaviour B2
