@@ -7,6 +7,10 @@ from Controllers.controller_manager import ControllerManager
 from cartridge_loader import CartridgeLoader
 from time import sleep
 
+logging.basicConfig()
+logging.root.setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
+
 FONTS_PATH = "./UI/Fonts"
 
 class Console:
