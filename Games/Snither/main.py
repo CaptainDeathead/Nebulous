@@ -616,6 +616,17 @@ class Snither:
                     elif event.key == pg.K_LEFT:
                         self.snakes[0].face_left()
 
+            for c, controller in enumerate(self.controllers):
+                for event in controller.event.get():
+                    if event.type == CONTROLS.DPAD.UP:
+                        self.snakes[c].face_up()
+                    elif event.type == CONTROLS.DPAD.RIGHT:
+                        self.snakes[c].face_right()
+                    elif event.type == CONTROLS.DPAD.DOWN:
+                        self.snakes[c].face_down()
+                    elif event.type == CONTROLS.DPAD.LEFT:
+                        self.snakes[c].face_left()
+
             if time() - self.last_snake_move_time > self.STEP_INTERVAL:
                 self.last_snake_move_time = time()
 
