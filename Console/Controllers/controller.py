@@ -45,7 +45,7 @@ class Event:
         for event_class in self.events:
             if event_class.type == event: return
 
-        self.events.append(Event(event))
+        self.events.append(ActualEvent(event))
 
 class Controller:
     def __init__(self, port: int, left_channel: MCP3008, right_channel: MCP3008) -> None:
