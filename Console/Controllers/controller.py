@@ -30,7 +30,7 @@ class CONTROLS:
 
 class ActualEvent:
     def __init__(self, type: int) -> None:
-        self.type == type
+        self.type = type
 
 class Event:
     events = []
@@ -42,10 +42,10 @@ class Event:
             self.events.remove(event)
 
     def register(self, event: int) -> None:
-        for event in self.events:
-            if event in self.events: return
+        for event_class in self.events:
+            if event_class.type == event: return
 
-        self.events.append(event)
+        self.events.append(Event(event))
 
 class Controller:
     def __init__(self, port: int, left_channel: MCP3008, right_channel: MCP3008) -> None:

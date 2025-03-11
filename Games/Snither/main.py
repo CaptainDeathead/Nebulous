@@ -606,8 +606,6 @@ class Snither:
             self.clock.tick(60)
 
             for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    pass
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_UP:
                         self.snakes[0].face_up()
