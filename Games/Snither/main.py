@@ -392,13 +392,11 @@ class MainMenu:
         self.info_lbl = self.fonts["medium"].render   ("Press A to ready / unready...", True, (255, 255, 255))
         self.info_lbl.blit(self.fonts["medium"].render("      A", True, (0, 255, 0)))
 
-
         self.timer_active = False
         self.timer_start_time = time()
         self.start_game = False
         self.last_timer_time = 0
         self.timer_first_beep = True
-
 
         self.infinite_mode_enabled_lbl = self.fonts["medium"].render("Infite mode enabled... (B)", True, (255, 255, 255))
         self.infinite_mode_enabled_lbl.blit(self.fonts["medium"].render(" " * len("Infite mode ") + "enabled", True, (0, 255, 0)), (0, 0))

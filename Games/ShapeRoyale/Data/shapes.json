@@ -1,0 +1,32 @@
+{
+    "Square": {
+        "class": "Balance",
+        "hp": 100,
+        "shield": 100,
+        "shield_regen": 5,
+        "firerate": 1.5,
+        "shield_damage": 25,
+        "damage": 8,
+        "speed": 20
+    },
+    "Triangle": {
+        "class": "Agility",
+        "hp": 75,
+        "shield": 50,
+        "shield_regen": 5,
+        "firerate": 2.5,
+        "shield_damage": 15,
+        "damage": 6,
+        "speed": 30
+    },
+    "Circle": {
+        "class": "Strength",
+        "hp": 120,
+        "shield": 200,
+        "shield_regen": 2,
+        "firerate": 0.8,
+        "shield_damage": 40,
+        "damage": 10,
+        "speed": 10
+    }
+}
