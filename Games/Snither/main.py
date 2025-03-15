@@ -47,7 +47,7 @@ class Snake:
     PART_SIZE = 50
     ACTIVATION_PERCENT = 0.5
 
-    def __init__(self, head: Sequence[int], game_board: List[List[int]], apple_board: List[List[int]], color: pg.Color, apples: List[Apple], is_player: bool) -> None:
+    def __init__(self, head: Sequence[int], game_board: List[List[int]], apple_board: List[List[int]], color: pg.Color, apples: List[Apple], is_player: bool, deaths: int = 0) -> None:
         self.game_board = game_board
         self.apple_board = apple_board
         self.direction = DIRECTION.random()
@@ -61,6 +61,7 @@ class Snake:
         self.game_board[self.y][self.x] = 1
         self.last_update_direction = self.direction
         self.dead = False
+        self.deaths = deaths
 
         self.last_tail_position = [self.body[-1][0], self.body[-1][1]]
 
@@ -128,6 +129,7 @@ class Snake:
 
     def die(self) -> None:
         self.dead = True
+        self.deaths += 1
         self.color = pg.Color(150, 150, 150)
 
         if self.is_player:
@@ -673,10 +675,19 @@ class Snither:
         curr_y = scores_lbl_y + scores_lbl.height + 20 + 30
         spacing = 40
 
+        score_lbls = []
+        width_sum = 0
         for i, snake in enumerate(sorted_snakes):
-            score_lbl = self.main_menu.fonts["medium"].render(f"{snake.name_prefix} {self.snakes.index(snake) + 1} - {len(snake.body)}", True, snake.og_color)
-            self.display_surf.blit(score_lbl, (self.WIDTH // 2 - 200, curr_y))
+            if self.infinite:
+                score_lbls.append(self.main_menu.fonts["medium"].render(f"{snake.name_prefix} {self.snakes.index(snake) + 1} - {len(snake.body)} - Deaths: {snake.deaths}", True, snake.og_color))
+            else:
+                score_lbls.append(self.main_menu.fonts["medium"].render(f"{snake.name_prefix} {self.snakes.index(snake) + 1} - {len(snake.body)}", True, snake.og_color))
 
+            width_sum += score_lbls[-1].width
+
+        avg_width = width_sum / len(score_lbls)
+        for score_lbl in score_lbls:
+            self.display_surf.blit(score_lbl, (self.WIDTH // 2 - avg_width // 2, curr_y))
             curr_y += spacing
 
         cont_lbl = self.main_menu.fonts["large"].render("Press A to continue...", True, (255, 255, 255))
@@ -728,6 +739,11 @@ class Snither:
                         self.snakes[0].face_down()
                     elif event.key == pg.K_LEFT:
                         self.snakes[0].face_left()
+                    
+                    elif event.key == pg.K_BACKSPACE:
+                        if self.infinite:
+                            self.show_game_over(None, False)
+                            return
 
             for c, controller in enumerate(self.controllers):
                 for event in controller.event.get():
@@ -739,6 +755,11 @@ class Snither:
                         self.snakes[c].face_down()
                     elif event.type == CONTROLS.DPAD.LEFT:
                         self.snakes[c].face_left()
+
+                    elif event.type == CONTROLS.SELECT:
+                        if self.infinite:
+                            self.show_game_over(None, False)
+                            return
 
             if time() - self.last_snake_move_time > self.STEP_INTERVAL:
                 self.last_snake_move_time = time()
@@ -773,7 +794,7 @@ class Snither:
                     if snake.dead:
                         if self.infinite:
                             snake.__init__([randint(5, len(self.game_board) - 6), randint(5, len(self.game_board) - 6)],
-                                        self.game_board, self.apple_board, snake.og_color, self.apples, snake.is_player)
+                                        self.game_board, self.apple_board, snake.og_color, self.apples, snake.is_player, snake.deaths)
 
                     # Not else or elif because if infinite is on it needs to check again
                     if not snake.dead:
