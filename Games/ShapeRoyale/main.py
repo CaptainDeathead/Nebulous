@@ -45,11 +45,10 @@ class Apple:
 
 class Snake:
     PART_SIZE = 50
-    ACTIVATION_PERCENT = 0.001
+    ACTIVATION_PERCENT = 0.5
 
-    def __init__(self, head: Sequence[int], game_board: List[List[int]], apple_board: List[List[int]], color: pg.Color, apples: List[Apple], is_player: bool) -> None:
+    def __init__(self, head: Sequence[int], game_board: List[List[int]], color: pg.Color, apples: List[Apple], is_player: bool) -> None:
         self.game_board = game_board
-        self.apple_board = apple_board
         self.direction = DIRECTION.random()
         self.body = [head]
 
@@ -114,7 +113,6 @@ class Snake:
 
         for dead_apple in apples_to_remove:
             self.apples.remove(dead_apple)
-            self.apple_board[dead_apple.y][dead_apple.x] = 0
 
         self.last_update_direction = self.direction
 
@@ -187,11 +185,10 @@ class Snake:
         turn_away_percent = 0
 
         if self.direction == DIRECTION.UP or self.direction == DIRECTION.DOWN:
-            # looking left
             for x in range(1, 6):
                 nx = max(0, min(self.x-x, len(self.game_board)-1))
                 if self.game_board[self.y][nx] == 1:
-                    turn_right_percent += (1/5) * (-x) + 1.2 # Worked in desmos so will work here???
+                    turn_right_percent += (1/5) * x + 1.2 # Worked in desmos so will work here???
 
             for x in range(1, 6):
                 nx = max(0, min(self.x+x, len(self.game_board)-1))
@@ -202,7 +199,7 @@ class Snake:
                 for y in range(1, 6):
                     ny = max(0, min(self.y-y, len(self.game_board)-1))
                     if self.game_board[ny][self.x] == 1:
-                        turn_away_percent += (1/5) * (-y) + 1.2 # Worked in desmos so will work here???
+                        turn_away_percent += (1/5) * y + 1.2 # Worked in desmos so will work here???
             else:
                 for y in range(1, 6):
                     ny = max(0, min(self.y+y, len(self.game_board)-1))
@@ -213,7 +210,7 @@ class Snake:
             for y in range(1, 6):
                 ny = max(0, min(self.y-y, len(self.game_board)-1))
                 if self.game_board[ny][self.x] == 1:
-                    turn_right_percent += (1/5) * (-y) + 1.2 # Worked in desmos so will work here???
+                    turn_right_percent += (1/5) * y + 1.2 # Worked in desmos so will work here???
 
             for y in range(1, 6):
                 ny = max(0, min(self.y+y, len(self.game_board)-1))
@@ -224,7 +221,7 @@ class Snake:
                 for x in range(1, 6):
                     nx = max(0, min(self.x-x, len(self.game_board)-1))
                     if self.game_board[self.y][nx] == 1:
-                        turn_away_percent += (1/5) * (-x) + 1.2 # Worked in desmos so will work here???
+                        turn_away_percent += (1/5) * x + 1.2 # Worked in desmos so will work here???
             else:
                 for x in range(1, 6):
                     nx = max(0, min(self.x+x, len(self.game_board)-1))
@@ -255,72 +252,6 @@ class Snake:
             return
 
         if turn_left_percent >= self.ACTIVATION_PERCENT:
-            self.turn_left()
-            return
-
-        apple_turn_right_percent = 0.0
-        apple_turn_left_percent = 0.0
-        apple_turn_towards_percent = 0.0
-        
-        if self.direction == DIRECTION.UP or self.direction == DIRECTION.DOWN:
-            for x in range(1, 6):
-                nx = max(0, min(self.x-x, len(self.apple_board)-1))
-                if self.apple_board[self.y][nx] == 1:
-                    apple_turn_left_percent += (1/5) * (-x) + 1.2 # Worked in desmos so will work here???
-
-            for x in range(1, 6):
-                nx = max(0, min(self.x+x, len(self.apple_board)-1))
-                if self.apple_board[self.y][nx] == 1:
-                    apple_turn_right_percent += (-(1/5)) * x + 1.2 # Worked in desmos so will work here???
-
-            if self.direction == DIRECTION.UP:
-                for y in range(1, 6):
-                    ny = max(0, min(self.y-y, len(self.apple_board)-1))
-                    if self.apple_board[ny][self.x] == 1:
-                        apple_turn_towards_percent -= (1/5) * (-y) + 1.2 # Worked in desmos so will work here???
-            else:
-                for y in range(1, 6):
-                    ny = max(0, min(self.y+y, len(self.apple_board)-1))
-                    if self.apple_board[ny][self.x] == 1:
-                        apple_turn_towards_percent -= (-(1/5)) * y + 1.2 # Worked in desmos so will work here???
-
-        else:
-            for y in range(1, 6):
-                ny = max(0, min(self.y-y, len(self.apple_board)-1))
-                if self.apple_board[ny][self.x] == 1:
-                    apple_turn_left_percent += (1/5) * (-y) + 1.2 # Worked in desmos so will work here???
-
-            for y in range(1, 6):
-                ny = max(0, min(self.y+y, len(self.apple_board)-1))
-                if self.apple_board[ny][self.x] == 1:
-                    apple_turn_right_percent += (-(1/5)) * y + 1.2 # Worked in desmos so will work here???
-
-            if self.direction == DIRECTION.LEFT:
-                for x in range(1, 6):
-                    nx = max(0, min(self.x-x, len(self.apple_board)-1))
-                    if self.apple_board[self.y][nx] == 1:
-                        apple_turn_towards_percent -= (1/5) * (-x) + 1.2 # Worked in desmos so will work here???
-            else:
-                for x in range(1, 6):
-                    nx = max(0, min(self.x+x, len(self.apple_board)-1))
-                    if self.apple_board[self.y][nx] == 1:
-                        apple_turn_towards_percent -= (-(1/5)) * x + 1.2 # Worked in desmos so will work here???
-
-        if self.direction == DIRECTION.DOWN or self.direction == DIRECTION.LEFT:
-            old_apple_turn_right_percent = turn_right_percent
-            apple_turn_right_percent = apple_turn_left_percent
-            apple_turn_left_percent = old_apple_turn_right_percent
-
-        if apple_turn_right_percent > turn_left_percent:
-            if apple_turn_left_percent > turn_right_percent:
-                if apple_turn_left_percent > apple_turn_right_percent:
-                    self.turn_left()
-                    return
-
-            self.turn_right()
-            return
-
-        if apple_turn_left_percent > turn_right_percent:
             self.turn_left()
             return
         
@@ -529,7 +460,6 @@ class Snither:
         self.clock = pg.time.Clock()
 
         self.game_board = [[0 for x in range(self.PLAYING_FIELD_SIZE // Snake.PART_SIZE)] for y in range(self.PLAYING_FIELD_SIZE // Snake.PART_SIZE)]
-        self.apple_board = [[0 for x in range(self.PLAYING_FIELD_SIZE // Snake.PART_SIZE)] for y in range(self.PLAYING_FIELD_SIZE // Snake.PART_SIZE)]
 
         # Borders
         self.game_board[0] = [1 for x in range(self.PLAYING_FIELD_SIZE // Snake.PART_SIZE)]
@@ -541,11 +471,8 @@ class Snither:
 
         self.apples = [Apple(randint(1, len(self.game_board) - 2), randint(1, len(self.game_board) - 2)) for _ in range(self.NUM_APPLES)]
 
-        for apple in self.apples:
-            self.apple_board[apple.y][apple.x] = 1
-
         self.snakes = [Snake([randint(5, len(self.game_board) - 6), randint(5, len(self.game_board) - 6)],
-                             self.game_board, self.apple_board, self.SNAKE_COLORS[randint(0, len(self.SNAKE_COLORS) - 1)], self.apples, i <= self.num_screens - 1) for i in range(self.NUM_SNAKES)]
+                             self.game_board, self.SNAKE_COLORS[randint(0, len(self.SNAKE_COLORS) - 1)], self.apples, i <= self.num_screens - 1) for i in range(self.NUM_SNAKES)]
 
         self.last_snake_move_time = time()
 

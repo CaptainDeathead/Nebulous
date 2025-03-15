@@ -1,6 +1,11 @@
 import logging
 
 try:
+    from gpiozero import Device
+    from gpiozero.pins.pigpio import PiGPIOFactory
+
+    Device.pin_factory = PiGPIOFactory()
+
     from gpiozero import MCP3008
 except:
     def MCP3008(**args) -> None: ...

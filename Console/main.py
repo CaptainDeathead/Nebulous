@@ -7,6 +7,10 @@ from Controllers.controller_manager import ControllerManager
 from cartridge_loader import CartridgeLoader
 from time import sleep
 
+logging.basicConfig()
+logging.root.setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
+
 FONTS_PATH = "./UI/Fonts"
 
 class Console:
@@ -48,12 +52,14 @@ class Console:
         logging.info("Initializing display...")
 
         pg.init()
+        pg.mixer.init(size=32)
 
         self.pygame_info = pg.display.Info()
         self.WIDTH = self.pygame_info.current_w
         self.HEIGHT = self.pygame_info.current_h
 
-        self.screen = pg.display.set_mode((self.WIDTH, self.HEIGHT), pg.FULLSCREEN | pg.DOUBLEBUF | pg.HWSURFACE)
+        self.screen = pg.display.set_mode((self.WIDTH, self.HEIGHT), pg.FULLSCREEN | pg.DOUBLEBUF | pg.HWSURFACE, display=0)
+
         self.clock = pg.time.Clock()
 
     def init_menu_interface(self) -> None:

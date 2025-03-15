@@ -6,6 +6,7 @@ import importlib
 
 try:
     from spidev import SpiDev
+    TESTING = False
 except:
     TESTING = True
     SpiDev = None
@@ -15,6 +16,9 @@ from shutil import rmtree
 from io import BytesIO
 from zipfile import ZipFile
 from time import sleep
+
+# TODO: THIS IS ONLY FOR TESTING WITHOUT SD_CARDS IN THE PI
+TESTING = True
 
 class CartridgeLoader:
     SD_BLOCK_SIZE = 512
@@ -33,7 +37,7 @@ class CartridgeLoader:
         # Send SPI command to the SD card
         # This is absolute majic that is definitly not worth the time to learn
         cmd_packet = [0x40 | cmd] + [(arg >> (8 * i)) & 0xFF for i in range(3, -1, -1)] + [0x95]
-        self.xfer2(cmd_packet)
+        self.spi.xfer2(cmd_packet)
         sleep(0.1) # Allow time for a response
 
         return self.spi.xfer2([0xFF]) # Get response
@@ -86,7 +90,10 @@ class CartridgeLoader:
     def load_cartridge(self) -> None:
         if TESTING:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-            from Games.Meteors.consolemain import ConsoleEntry
+            
+            from Games.Snither.consolemain import ConsoleEntry
+            #from Games.Racer.consolemain import ConsoleEntry
+            #from Games.Meteors.consolemain import ConsoleEntry
             self.on_title_launch(ConsoleEntry)
             return
 

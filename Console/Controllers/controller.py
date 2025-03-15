@@ -28,9 +28,23 @@ class CONTROLS:
     START = 5
     ABXY = ABXY_CONTROLS
 
+    @staticmethod
+    def get_control_str(control: int) -> str:
+        match control:
+            case 0: return "DPAD UP"
+            case 1: return "DPAD RIGHT"
+            case 2: return "DPAD DOWN"
+            case 3: return "DPAD LEFT"
+            case 4: return "SELECT"
+            case 5: return "START"
+            case 6: return "A"
+            case 7: return "B"
+            case 8: return "X"
+            case 9: return "Y"
+
 class ActualEvent:
     def __init__(self, type: int) -> None:
-        self.type == type
+        self.type = type
 
 class Event:
     events = []
@@ -42,10 +56,12 @@ class Event:
             self.events.remove(event)
 
     def register(self, event: int) -> None:
-        for event in self.events:
-            if event in self.events: return
+        for event_class in self.events:
+            if event_class.type == event: return
 
-        self.events.append(event)
+        logging.debug(f"Controller recieved {CONTROLS.get_control_str(event)}.")
+
+        self.events.append(ActualEvent(event))
 
 class Controller:
     def __init__(self, port: int, left_channel: MCP3008, right_channel: MCP3008) -> None:
@@ -57,7 +73,7 @@ class Controller:
 
         self.event = Event()
 
-    def split_channel_value(channel: MCP3008, value: float, tolerance: float = 0.05) -> bool:
+    def split_channel_value(self, channel: MCP3008, value: float, tolerance: float = 0.05) -> bool:
         ch_value = channel.value
 
         if value > ch_value - tolerance and value < ch_value + tolerance:
