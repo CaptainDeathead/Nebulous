@@ -16,22 +16,22 @@ FONTS_PATH = "./UI/Fonts"
 
 class DIRECTION:
     UP    = 1
-    RIGHT = 2
-    DOWN  = 3
-    LEFT  = 4
-    NEIN = 31415
+    RIGHT = 4
+    DOWN  = 2
+    LEFT  = 3
 
     @property
-    def RANDOM(self) -> int: return randint(0, 3)
+    def RANDOM(self) -> int: return randint(1, 4)
 
 class Bullet:
     def __init__(self, location: Tuple[int, int], color: pg.Color, direction: int):
         self.x = location[0]
         self.y = location[1]
         self.color = color
+        self.speed = 10
         self.direction = direction
 
-        if direction % 2 == 0:
+        if direction > 2:
             self.height = 4
             self.width = 8
         else:
@@ -39,8 +39,15 @@ class Bullet:
             self.width = 4
     
     def move(self, surface: pg.Surface) -> None:
-        self.x += 1
-        self.y += 1
+        match self.direction:
+            case 1:
+                self.y -= self.speed
+            case 2: 
+                self.y += self.speed
+            case 3:
+                self.x -= self.speed
+            case 4:
+                self.x += self.speed
         pg.draw.rect(surface, self.color, pg.Rect(self.x, self.y, self.width, self.height))
 
 class Ship:
@@ -49,7 +56,10 @@ class Ship:
     def __init__(self, location: Tuple[int, int], color: pg.Color) -> None:
         self.x = location[0]
         self.y = location[1]
-        self.direction = DIRECTION.RANDOM
+
+        self.direction = 4
+        self.speed = 5
+        self.scale = 10
 
         self.score = 0
         self.color = color
@@ -57,14 +67,14 @@ class Ship:
 
     def draw(self, surface) -> None:
         match self.direction:
-            case DIRECTION.UP:
-                points = [(1+self.x, 1+self.y), (1+self.x, 5+self.y), (5+self.x, 3+self.y)]
-            case DIRECTION.DOWN:
-                points = [(5+self.x, 1+self.y), (5+self.x, 5+self.y), (1+self.x, 3+self.y)]
-            case DIRECTION.LEFT:
-                points = [(5+self.x,5+self.y), (1+self.x, 5+self.y), (3+self.x, 1+self.y)]
-            case DIRECTION.RIGHT:
-                points = [(5+self.x,1+self.y), (1+self.x, 1+self.y), (3+self.x, 5+self.y)]
+            case 1:
+                points = [(5*self.scale+self.x,5*self.scale+self.y), (1+self.x, 5*self.scale+self.y), (3*self.scale+self.x, 1+self.y)]
+            case 2:
+                points = [(5*self.scale+self.x,1+self.y), (1+self.x, 1+self.y), (3*self.scale+self.x, 5*self.scale+self.y)]
+            case 3:
+                points = [(5*self.scale+self.x, 1+self.y), (5*self.scale+self.x, 5*self.scale+self.y), (1+self.x, 3*self.scale+self.y)]
+            case 4:
+                points = [(1+self.x, 1+self.y), (1+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)]
             case _:
                 n = 1
                 while True:
@@ -73,10 +83,10 @@ class Ship:
 
         pg.draw.polygon(surface, self.color, points)
 
-    def move_up(self, speed: int | float) -> None: self.direction = DIRECTION.UP; self.y += speed
-    def move_right(self, speed: int | float) -> None: self.direction = DIRECTION.RIGHT; self.x += speed
-    def move_down(self, speed: int | float) -> None: self.direction = DIRECTION.DOWN; self.y -= speed
-    def move_left(self, speed: int | float) -> None: self.direction = DIRECTION.LEFT; self.x -= speed
+    def move_up(self) -> None: self.direction = 1; self.y -= self.speed
+    def move_right(self) -> None: self.direction = 4; self.x += self.speed
+    def move_down(self) -> None: self.direction = 2; self.y += self.speed
+    def move_left(self) -> None: self.direction = 3; self.x -= self.speed
 
 class Screen(pg.Surface):
     def __init__(self, rect: pg.Rect, flags: int = 0) -> None:
@@ -238,6 +248,8 @@ class Meteors:
         self.console_update = console_update
         self.get_num_players = get_num_players
         self.controllers = controllers
+        self.get_num_players = get_num_players
+        self.num_screens =  self.get_num_players()
 
         self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers)
 
@@ -281,7 +293,21 @@ class Meteors:
 
         acc_dt = 0
 
+        start_time = time()
+
+        def reset_game() -> None:
+            # > what
+            #if time() - start_time < 5: return
+            self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers)
+
         while 1:
+            self.clock.tick(60)
+
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_SPACE:
+                        reset_game()
+                        return
             acc_dt += self.clock.tick(60)
 
             for event in pg.event.get():
@@ -307,19 +333,28 @@ class Meteors:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     pass
+                
                 if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_UP:
-                        self.ships[0].face_up()
-                    elif event.key == pg.K_RIGHT:
-                        self.ships[0].face_right()
-                    elif event.key == pg.K_DOWN:
-                        self.ships[0].face_down()
-                    elif event.key == pg.K_LEFT:
-                        self.ships[0].face_left()
-                    elif event.key == pg.K_a:
+                    if event.key == pg.K_a:
                         #shoot bullet
-                        self.bullets.append(Bullet([self.ships[0].x, self.ships[1].y], self.ships[0].color), self.ships[0].direction)
-                        
+                        self.bullets.append(Bullet([self.ships[0].x, self.ships[0].y], self.ships[0].color, self.ships[0].direction))
+                    elif event.key == pg.K_y:
+                        self.ships[0].dead = True
+            
+            keys = pg.key.get_pressed()  # Get the state of all keys
+            if keys[pg.K_UP]:
+                self.ships[0].move_up()
+            elif keys[pg.K_RIGHT]:
+                self.ships[0].move_right()
+            elif keys[pg.K_DOWN]:
+                self.ships[0].move_down()
+            elif keys[pg.K_LEFT]:
+                self.ships[0].move_left()
+
+            for ship in self.ships:
+                ship.draw(self.display_surf)
+            for bullet in self.bullets:
+                bullet.move(self.display_surf)
 
             if time() - self.last_snake_move_time > self.STEP_INTERVAL:
                 self.last_snake_move_time = time()
@@ -329,10 +364,13 @@ class Meteors:
                     #something goes here
 
                 alive_player_count = 0
-                alive_snake_index = None
+                alive_snake_count = 0
+                alive_snake_index = 0
                 for i, ship in enumerate(self.ships):
                     if not ship.dead:
-                        alive_snake_index = i
+                        alive_snake_index += 1
+                        alive_snake_count += 1
+                        alive_player_count += 1
                     
                 if alive_player_count == 0:
                     self.show_game_over(alive_snake_index)
