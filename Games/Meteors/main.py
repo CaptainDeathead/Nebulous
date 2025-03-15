@@ -7,6 +7,7 @@ from Console.Controllers.controller import Controller, CONTROLS
 
 from time import time
 from random import randint
+from math import cos, sin, radians
 
 from typing import Sequence, List, Tuple, Dict
 
@@ -28,7 +29,7 @@ class Bullet:
         self.x = location[0]
         self.y = location[1]
         self.color = color
-        self.speed = 10
+        self.speed = 18
         self.direction = direction
 
         if direction > 2:
@@ -56,42 +57,70 @@ class Ship:
     def __init__(self, location: Tuple[int, int], color: pg.Color) -> None:
         self.x = location[0]
         self.y = location[1]
+        self.nozzle = (location[0], location[1])
 
         self.direction = 4
-        self.speed = 5
+        self.speed = 8
         self.scale = 10
+        
+        self.tripoints = [(5*self.scale+self.x,5*self.scale+self.y), (1+self.x, 5*self.scale+self.y), (3*self.scale+self.x, 1+self.y)]
 
         self.score = 0
         self.color = color
+
+        self.lives = 4
         self.dead = False
 
     def draw(self, surface) -> None:
         match self.direction:
             case 1:
-                points = [(5*self.scale+self.x,5*self.scale+self.y), (1+self.x, 5*self.scale+self.y), (3*self.scale+self.x, 1+self.y)]
+                self.tripoints = [(5*self.scale+self.x,5*self.scale+self.y), (1+self.x, 5*self.scale+self.y), (3*self.scale+self.x, 1+self.y)]
             case 2:
-                points = [(5*self.scale+self.x,1+self.y), (1+self.x, 1+self.y), (3*self.scale+self.x, 5*self.scale+self.y)]
+                self.tripoints = [(5*self.scale+self.x,1+self.y), (1+self.x, 1+self.y), (3*self.scale+self.x, 5*self.scale+self.y)]
             case 3:
-                points = [(5*self.scale+self.x, 1+self.y), (5*self.scale+self.x, 5*self.scale+self.y), (1+self.x, 3*self.scale+self.y)]
+                self.tripoints = [(5*self.scale+self.x, 1+self.y), (5*self.scale+self.x, 5*self.scale+self.y), (1+self.x, 3*self.scale+self.y)]
             case 4:
-                points = [(1+self.x, 1+self.y), (1+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)]
+                self.tripoints = [(1+self.x, 1+self.y), (1+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)]
             case _:
                 n = 1
                 while True:
                     print("LinusTechTrips"*n)
                     n += 1
 
-        pg.draw.polygon(surface, self.color, points)
+        pg.draw.polygon(surface, self.color, self.tripoints)
 
-    def move_up(self) -> None: self.direction = 1; self.y -= self.speed
-    def move_right(self) -> None: self.direction = 4; self.x += self.speed
-    def move_down(self) -> None: self.direction = 2; self.y += self.speed
-    def move_left(self) -> None: self.direction = 3; self.x -= self.speed
+    def move_up(self) -> None: self.direction = 1; self.y -= self.speed; self.nozzle = (3*self.scale+self.x, 1+self.y)
+    def move_right(self) -> None: self.direction = 4; self.x += self.speed; self.nozzle = (5*self.scale+self.x, 3*self.scale+self.y)
+    def move_down(self) -> None: self.direction = 2; self.y += self.speed; self.nozzle = (3*self.scale+self.x, 5*self.scale+self.y)
+    def move_left(self) -> None: self.direction = 3; self.x -= self.speed; self.nozzle = (1+self.x, 3*self.scale+self.y)
 
-#
+
 class Rock:
-    def __init__(self):
-        self.speed = 3
+    def __init__(self, radius, x, y, speed, va:float):
+        self.radius = radius
+        self.x = x
+        self.y = y
+
+        self.big = True
+        self.speed = speed
+        self.heading: float = va
+
+        self.dx = cos(radians(self.heading)) * self.speed
+        self.dy = sin(radians(self.heading)) * self.speed
+    
+    def move(self, surface, bound_x, bound_y):
+        self.x += self.dx
+        self.y += self.dy
+
+        if self.x - self.radius <= 0 or self.x + self.radius >= bound_x:
+            self.dx = -self.dx
+            self.heading = (180 - self.heading) % 360
+            
+        if self.y - self.radius <= 0 or self.y + self.radius >= bound_y:
+            self.dy = -self.dy
+            self.heading = (360 - self.heading) % 360
+
+        pg.draw.circle(surface, (255, 255, 255), (self.x, self.y), self.radius, 30)
 
 class UFO:
     ...
@@ -129,7 +158,7 @@ class Player:
         else: return pg.Color(255, 0, 0)
 
 class MainMenu:
-    TIMER_LENGTH = 1
+    TIMER_LENGTH = 0
 
     def __init__(self, display_surf: pg.Surface, console_update: object, controllers: List[Controller]) -> None:
         self.display_surf = display_surf
@@ -250,6 +279,9 @@ class Meteors:
     NUM_SHIPS = 1
     PLAYING_FIELD_SIZE = -1
     STEP_INTERVAL = 0.15
+    INITIAL_DIFFICULTY = 1
+    DIFFICULTY_GAP = 6
+    DIFFICULTY_CAP = 25
 
     def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller]) -> None:
         self.display_surf = display_surf
@@ -260,13 +292,18 @@ class Meteors:
         self.num_screens =  self.get_num_players()
 
         self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers)
+        self.difficulty = self.INITIAL_DIFFICULTY
+        self.num_asteroids: float = 0
 
         self.screens = [Screen(pg.Rect(0, 0, self.WIDTH, self.HEIGHT), pg.SRCALPHA)]
         self.clock = pg.time.Clock()
 
         self.ships = [Ship((randint(0, 69), randint(0, 69)), (255, 0, 0)) for _ in range(self.NUM_SHIPS)]
         self.bullets = []
+        self.asteroids = []
+
         self.last_snake_move_time = time()
+        self.last_difficulty_increase = time()
 
         self.display_surf.fill((0, 0, 0))
 
@@ -337,6 +374,19 @@ class Meteors:
     def main(self) -> None:
         while 1:
             self.clock.tick(60)
+            for screen in self.screens:
+                screen.fill((0, 0, 0))
+
+            if time() - self.last_difficulty_increase >= self.DIFFICULTY_GAP:
+                if self.difficulty < self.DIFFICULTY_CAP:
+                    self.difficulty += 1
+                self.last_difficulty_increase = time()
+                #print(self.difficulty)
+
+            #spawn "meteors"
+            if self.num_asteroids < self.difficulty:
+                self.num_asteroids += 1
+                self.asteroids.append(Rock(75, 500, 500, 10, randint(1, 358)))
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
@@ -345,7 +395,7 @@ class Meteors:
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_a:
                         #shoot bullet
-                        self.bullets.append(Bullet([self.ships[0].x, self.ships[0].y], self.ships[0].color, self.ships[0].direction))
+                        self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction))
                     elif event.key == pg.K_y:
                         self.ships[0].dead = True
             
@@ -359,16 +409,37 @@ class Meteors:
             elif keys[pg.K_LEFT]:
                 self.ships[0].move_left()
 
+
+            #doing the thing with the thing 
+            #collisoas
+            for i, rock in enumerate(self.asteroids):
+                for i2, bullet in enumerate(self.bullets):
+                    if ((bullet.x > rock.x - rock.radius) and (bullet.x < rock.x + rock.radius)) and ((bullet.y > rock.y - rock.radius) and (bullet.y < rock.y + rock.radius)):
+                        if rock.big == True:
+                            rock.big = False
+                            rock.radius = rock.radius // 2
+                        else:
+                            self.asteroids.pop(i)
+                        self.num_asteroids -= 0.5
+                        self.bullets.pop(i2)
+                        self.ships[0].score += 1
+
+            #drawaing and moving
             for ship in self.ships:
+                for rock in self.asteroids:
+                    for point in ship.tripoints:
+                        if ((point[0] > rock.x - rock.radius) and (point[0] < rock.x + rock.radius)) and ((point[1] > rock.y - rock.radius) and (point[1] < rock.y + rock.radius)):
+                            ship.dead = True
+                #print(ship.x, ship.y)
                 ship.draw(self.display_surf)
             for bullet in self.bullets:
                 bullet.move(self.display_surf)
+            for rock in self.asteroids:
+                rock.move(self.display_surf, 1920, 1080)
 
             if time() - self.last_snake_move_time > self.STEP_INTERVAL:
                 self.last_snake_move_time = time()
 
-                for screen in self.screens:
-                    screen.fill((0, 0, 0))
                     #something goes here
 
                 alive_player_count = 0
@@ -384,9 +455,12 @@ class Meteors:
                     self.show_game_over(alive_snake_index)
                     return
 
-                for screen in self.screens:
-                    self.display_surf.blit(screen, screen.pos)
+            self.display_surf.blit(self.main_menu.fonts["large"].render(f"Level: {self.difficulty}", True, (0, 255, 0)))
+            self.display_surf.blit(self.main_menu.fonts["large"].render(f"Score: {self.ships[0].score}", True, (250, 156, 28)), (900, 0))
 
             self.console_update()
 
             pg.display.flip()
+
+            for screen in self.screens:
+                self.display_surf.blit(screen, screen.pos)
