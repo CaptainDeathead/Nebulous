@@ -1,0 +1,69 @@
+Shape Royale:
+    Powerups:
+        Common (40% spawn):
+            - +20% hp
+            - +20% shield
+            - +20% stamina
+            - +20% speed
+        Uncommon (30% spawn):    
+            - +20% damage
+            - +20% firerate
+            - +20% bullet speed
+            - +20% bullet penertation
+            - +20% shield regen rate
+        Rare (20% spawn):
+            - +10% life steal
+            - multi shot (+3 bullets at once)
+            - poison shot (+3dmg/s - 10s)
+            - +30% zone resistance
+        Legendary (10% spawn):
+            - health regen (+5hp/s)
+            - bullet damage scales over distance (+40%dmg/100px)
+
+    Building materials:
+        BMATS (Building Materials):
+            - Randomly scattered around the map
+            - Player should find ~3 per min
+
+        Square (1 BMAT):
+            - Moderate bullet stoppage
+            - Moderate durabilty
+        Triangle (2 BMAT's):
+            - Deals damage on player contact
+            - Weak durability
+            - Weak bullet stoppage
+        Circle (3 BMAT's):
+            - High bullet stoppage
+            - High durability
+        Hexagon (5 BMAT's):
+            - High bullet stoppage
+            - Moderate durability
+            - Inaccurate firing back at target
+    
+    Shapes:
+        Square:
+            - 100hp
+            - 100hp shield
+            - 5hp/s shield regen
+            - 1.5/s firerate
+            - 25hp shield damage (penetration)
+            - 8hp damage
+            - 20u/s speed
+        
+        Triangle:
+            - 75hp
+            - 50hp shield
+            - 5hp/s shield regen
+            - 2.5/s firerate
+            - 15hp shield damage (penetration)
+            - 6hp damage
+            - 30u/s speed
+
+        Circle:
+            - 120hp
+            - 200hp shield
+            - 2hp/s shield regen
+            - 0.8/s firerate
+            - 40hp shield damage (penetration)
+            - 10hp damage
+            - 10u/s speed

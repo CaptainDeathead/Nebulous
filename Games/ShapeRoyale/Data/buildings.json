@@ -1,0 +1,32 @@
+{
+    "BMATS": {
+        "description": "Randomly scattered around the map",
+        "spawn_rate": "Player should find ~3 per min"
+    },
+    "Structures": {
+        "Square": {
+            "cost": 1,
+            "effects": [],
+            "bullet_stoppage": 2,
+            "durability": 2
+        },
+        "Triangle": {
+            "cost": 2,
+            "effects": ["Deals damage on player contact"],
+            "durability": 1,
+            "bullet_stoppage": 1 
+        },
+        "Circle": {
+            "cost": 3,
+            "effects": [],
+            "bullet_stoppage": 3,
+            "durability": 3
+        },
+        "Hexagon": {
+            "cost": 5,
+            "effects": ["Inaccurate firing back at target"],
+            "bullet_stoppage": 3,
+            "durability": 2
+        }
+    }
+}
