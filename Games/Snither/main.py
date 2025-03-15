@@ -64,7 +64,7 @@ class Snake:
 
         self.last_tail_position = [self.body[-1][0], self.body[-1][1]]
 
-        self.grow_sound = generate_sine_wave(500, 0.2, volume=0.15)
+        self.grow_sound = generate_sine_wave(500, 0.2, volume=0.04)
 
         self.grow()
         self.grow()
@@ -83,6 +83,11 @@ class Snake:
 
     @property
     def y(self) -> int: return self.head[1]
+
+    @property
+    def name_prefix(self) -> str:
+        if self.is_player: return "Player"
+        else: return "Bot"
 
     def move(self) -> None:
         if self.dead: return
@@ -140,7 +145,6 @@ class Snake:
 
         if play_sound and self.is_player:
             self.grow_sound.play()
-            generate_sine_wave(500, 0.2, volume=0.15).play()
 
     def draw(self, surface: pg.Surface, surface_rect: pg.Rect) -> None:
         for part in self.body:
@@ -350,7 +354,7 @@ class Player:
 
     @property
     def ready_text(self) -> str:
-        if not self.controller.plugged_in: return "❓" # Should come out as ascii red question mark in the font
+        if not self.controller.plugged_in: return "❓" # Should come out as ascii red question mark in the font (null character)
         if self.ready: return "Ready"
         else: return "Not ready"
 
@@ -363,7 +367,7 @@ class Player:
 class MainMenu:
     TIMER_LENGTH = 6
 
-    def __init__(self, display_surf: pg.Surface, console_update: object, controllers: List[Controller]) -> None:
+    def __init__(self, display_surf: pg.Surface, console_update: object, controllers: List[Controller], infinite: bool = False) -> None:
         self.display_surf = display_surf
         self.console_update = console_update
         self.controllers = controllers
@@ -393,10 +397,18 @@ class MainMenu:
         self.last_timer_time = 0
         self.timer_first_beep = True
 
+
+        self.infinite_mode_enabled_lbl = self.fonts["medium"].render("Infite mode enabled... (B)", True, (255, 255, 255))
+        self.infinite_mode_enabled_lbl.blit(self.fonts["medium"].render(" " * len("Infite mode ") + "enabled", True, (0, 255, 0)), (0, 0))
+        self.infinite_mode_enabled_lbl.blit(self.fonts["medium"].render(" " * len("Infite mode enabled... (") + "B", True, (255, 180, 0)), (0, 0))
+
+        self.infinite_mode_disabled_lbl = self.fonts["medium"].render("Infite mode disabled... (B)", True, (255, 255, 255))
+        self.infinite_mode_disabled_lbl.blit(self.fonts["medium"].render(" " * len("Infite mode ") + "disabled", True, (255, 0, 0)), (0, 0))
+        self.infinite_mode_disabled_lbl.blit(self.fonts["medium"].render(" " * len("Infite mode disabled... (") + "B", True, (255, 180, 0)), (0, 0))
+
         self.timer_start_lbl = self.fonts["medium"].render("Game starting in  ...", True, (255, 255, 255))
         self.timer_end_lbls = [self.fonts["medium"].render(f"                 {i}", True, (0, 0, 255)) for i in range(1, self.TIMER_LENGTH + 1)]
 
-        self.players[0].ready = True
         self.players[0].controller.plugged_in = True
         #self.players[1].ready = True
         #self.players[1].controller.plugged_in = True
@@ -404,6 +416,8 @@ class MainMenu:
         #self.players[2].controller.plugged_in = True
         #self.players[3].ready = True
         #self.players[3].controller.plugged_in = True
+
+        self.infinite = infinite
 
         self.main()
 
@@ -457,20 +471,33 @@ class MainMenu:
             self.clock.tick(60)
 
             for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    pass
-                elif event.type == pg.KEYDOWN:
+                if event.type == pg.KEYDOWN:
                     if event.key == pg.K_SPACE:
                         self.players[0].ready = not self.players[0].ready
+
+                    elif event.key == pg.K_b:
+                        if self.timer_active: continue
+
+                        self.infinite = not self.infinite
 
             for i, controller in enumerate(self.controllers):
                 for event in controller.event.get():
                     if event.type == CONTROLS.ABXY.A:
                         self.players[i].ready = not self.players[i].ready
 
+                    elif event.type == CONTROLS.ABXY.B:
+                        if self.timer_active: continue
+
+                        self.infinite = not self.infinite
+
             self.draw_player_buttons()
 
             self.display_surf.blit(self.title_lbl, (self.width // 2 - self.title_lbl.width // 2, 100))
+
+            if self.infinite:
+                self.display_surf.blit(self.infinite_mode_enabled_lbl, (self.width // 2 - self.infinite_mode_enabled_lbl.width // 2, self.height - 250))
+            else:
+                self.display_surf.blit(self.infinite_mode_disabled_lbl, (self.width // 2 - self.infinite_mode_disabled_lbl.width // 2, self.height - 250))
             
             if self.timer_active:
                 timer_time = self.TIMER_LENGTH - (time() - self.timer_start_time)
@@ -484,10 +511,10 @@ class MainMenu:
                     self.last_timer_time = int(round(timer_time, 0))
 
                 curr_time_int = max(0, min(int(round(timer_time, 0)), len(self.timer_end_lbls) - 1))
-                self.display_surf.blit(self.timer_start_lbl, (self.width // 2 - self.timer_start_lbl.width // 2, self.height - 200))
-                self.display_surf.blit(self.timer_end_lbls[curr_time_int-1], (self.width // 2 - self.timer_start_lbl.width // 2, self.height - 200))
+                self.display_surf.blit(self.timer_start_lbl, (self.width // 2 - self.timer_start_lbl.width // 2, self.height - 150))
+                self.display_surf.blit(self.timer_end_lbls[curr_time_int-1], (self.width // 2 - self.timer_start_lbl.width // 2, self.height - 150))
             else:
-                self.display_surf.blit(self.info_lbl, (self.width // 2 - self.info_lbl.width // 2, self.height - 200))
+                self.display_surf.blit(self.info_lbl, (self.width // 2 - self.info_lbl.width // 2, self.height - 150))
 
             self.check_game_start()
 
@@ -514,13 +541,13 @@ class Snither:
     STEP_INTERVAL = 0.15
     MINIMAP_SIZE = 240
 
-    def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller]) -> None:
+    def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller], infinite: bool = False) -> None:
         self.display_surf = display_surf
         self.console_update = console_update
         self.get_num_players = get_num_players
         self.controllers = controllers
 
-        self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers)
+        self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers, infinite)
 
         self.num_screens = self.get_num_players()
 
@@ -553,6 +580,9 @@ class Snither:
         self.display_surf.fill((0, 0, 0))
 
         self.main()
+
+    @property
+    def infinite(self) -> bool: return self.main_menu.infinite
 
     def setup_screens(self) -> List[Screen]:
         def three_screens() -> List[Screen]:
@@ -623,16 +653,16 @@ class Snither:
                 break
 
         if alive_snake_index is not None and players_alive:
-            winner_lbl = self.main_menu.fonts["medium"].render(f"Player {alive_snake_index + 1} won by domination!", True, (255, 255, 255))
-            winner_lbl.blit(self.main_menu.fonts["medium"].render(f" " * len(f"Player {alive_snake_index + 1} won by ") + "domination", True, (255, 150, 0)), (0, 0))
+            winner_lbl = self.main_menu.fonts["medium"].render(f"{self.snakes[alive_snake_index].name_prefix} {alive_snake_index + 1} won by domination!", True, (255, 255, 255))
+            winner_lbl.blit(self.main_menu.fonts["medium"].render(f" " * len(f"{self.snakes[alive_snake_index].name_prefix} {alive_snake_index + 1} won by ") + "domination", True, (255, 150, 0)), (0, 0))
         else:
             winner_snake_index = 0
             for i, snake in enumerate(self.snakes):
                 if len(snake.body) > len(self.snakes[winner_snake_index].body):
                     winner_snake_index = i
 
-            winner_lbl = self.main_menu.fonts["medium"].render(f"Player {best_snake_index + 1} won by length!", True, (255, 255, 255))
-            winner_lbl.blit(self.main_menu.fonts["medium"].render(f" " * len(f"Player {best_snake_index + 1} won by ") + "length", True, (0, 255, 0)), (0, 0))
+            winner_lbl = self.main_menu.fonts["medium"].render(f"{self.snakes[best_snake_index].name_prefix} {best_snake_index + 1} won by length!", True, (255, 255, 255))
+            winner_lbl.blit(self.main_menu.fonts["medium"].render(f" " * len(f"{self.snakes[best_snake_index].name_prefix} {best_snake_index + 1} won by ") + "length", True, (0, 255, 0)), (0, 0))
 
         self.display_surf.blit(winner_lbl, (self.WIDTH // 2 - winner_lbl.width // 2, 100 + go_lbl.height + 50))
 
@@ -644,7 +674,7 @@ class Snither:
         spacing = 40
 
         for i, snake in enumerate(sorted_snakes):
-            score_lbl = self.main_menu.fonts["medium"].render(f"Player {self.snakes.index(snake) + 1} - {len(snake.body)}", True, snake.og_color)
+            score_lbl = self.main_menu.fonts["medium"].render(f"{snake.name_prefix} {self.snakes.index(snake) + 1} - {len(snake.body)}", True, snake.og_color)
             self.display_surf.blit(score_lbl, (self.WIDTH // 2 - 200, curr_y))
 
             curr_y += spacing
@@ -653,11 +683,12 @@ class Snither:
         cont_lbl.blit(self.main_menu.fonts["large"].render("      A", True, (0, 255, 0)))
 
         start_time = time()
+        continue_timer_length = 3
 
         def reset_game() -> None:
-            if time() - start_time < 5: return
+            if time() - start_time < continue_timer_length: return
 
-            self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers)
+            self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers, self.infinite)
 
         while 1:
             self.clock.tick(60)
@@ -665,12 +696,12 @@ class Snither:
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_SPACE:
-                        if time() - start_time < 5: continue
+                        if time() - start_time < continue_timer_length: continue
 
                         reset_game()
                         return
 
-            if time() - start_time >= 5:
+            if time() - start_time >= continue_timer_length:
                 self.display_surf.blit(cont_lbl, (self.WIDTH // 2 - cont_lbl.width // 2, curr_y + 40))
 
                 for controller in self.controllers:
@@ -734,17 +765,23 @@ class Snither:
                 alive_player_count = 0
                 alive_snake_index = None
                 for i, snake in enumerate(self.snakes):
+                    if i > self.num_screens - 1:
+                        snake.ai_move()
+
+                    snake.move()
+
+                    if snake.dead:
+                        if self.infinite:
+                            snake.__init__([randint(5, len(self.game_board) - 6), randint(5, len(self.game_board) - 6)],
+                                        self.game_board, self.apple_board, snake.og_color, self.apples, snake.is_player)
+
+                    # Not else or elif because if infinite is on it needs to check again
                     if not snake.dead:
                         alive_snake_index = i 
                         alive_snake_count += 1
 
                         if i <= self.num_screens - 1:
                             alive_player_count += 1
-
-                    if i > self.num_screens - 1:
-                        snake.ai_move()
-
-                    snake.move()
                     
                     for s, screen in enumerate(self.screens):
                         snake.draw(screen, screen_rects[s])
