@@ -88,6 +88,14 @@ class Ship:
     def move_down(self) -> None: self.direction = 2; self.y += self.speed
     def move_left(self) -> None: self.direction = 3; self.x -= self.speed
 
+#
+class Rock:
+    def __init__(self):
+        self.speed = 3
+
+class UFO:
+    ...
+
 class Screen(pg.Surface):
     def __init__(self, rect: pg.Rect, flags: int = 0) -> None:
         self.positioning_rect = rect
