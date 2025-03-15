@@ -45,7 +45,7 @@ class Apple:
 
 class Snake:
     PART_SIZE = 50
-    ACTIVATION_PERCENT = 0.001
+    ACTIVATION_PERCENT = 0.5
 
     def __init__(self, head: Sequence[int], game_board: List[List[int]], apple_board: List[List[int]], color: pg.Color, apples: List[Apple], is_player: bool) -> None:
         self.game_board = game_board
@@ -61,6 +61,8 @@ class Snake:
         self.game_board[self.y][self.x] = 1
         self.last_update_direction = self.direction
         self.dead = False
+
+        self.last_tail_position = [self.body[-1][0], self.body[-1][1]]
 
         self.grow_sound = generate_sine_wave(500, 0.2, volume=0.15)
 
@@ -88,6 +90,7 @@ class Snake:
         self.game_board[self.tail[1]][self.tail[0]] = 0
 
         head = self.head
+        self.last_tail_position = [self.tail[0], self.tail[1]]
 
         match self.direction:
             case DIRECTION.UP:    head = [head[0],     head[1] - 1]
@@ -131,11 +134,7 @@ class Snake:
                 self.apples.append(Apple(part[0], part[1]))
 
     def grow(self, play_sound: bool = False) -> None:
-        match self.direction:
-            case DIRECTION.UP:    self.body.append([self.tail[0],     self.tail[1] + 1]) # Push down
-            case DIRECTION.RIGHT: self.body.append([self.tail[0] - 1, self.tail[1]]) # Push left
-            case DIRECTION.DOWN:  self.body.append([self.tail[0],     self.tail[1] - 1]) # Push up
-            case DIRECTION.LEFT:  self.body.append([self.tail[0] + 1, self.tail[1]]) # Push right
+        self.body.append(self.last_tail_position)
 
         self.game_board[self.tail[1]][self.tail[0]] = 1
 
@@ -609,13 +608,21 @@ class Snither:
         if self.num_screens >= 3:
             pg.draw.line(self.display_surf, (255, 255, 255), (0, self.HEIGHT // 2), (self.WIDTH, self.HEIGHT // 2), width=5)
 
-    def show_game_over(self, alive_snake_index: int | None) -> None:
+    def show_game_over(self, alive_snake_index: int | None, players_alive: bool) -> None:
         self.display_surf.fill((0, 0, 0, 128))
 
         go_lbl = self.main_menu.fonts["large"].render("Game Over!", True, (255, 255, 255))
         self.display_surf.blit(go_lbl, (self.WIDTH // 2 - go_lbl.width // 2, 100))
 
-        if alive_snake_index is not None:
+        sorted_snakes = sorted(self.snakes, key=lambda snake: len(snake.body), reverse=True)
+
+        best_snake_index = alive_snake_index
+        for snake in sorted_snakes:
+            if not snake.dead:
+                best_snake_index = self.snakes.index(snake)
+                break
+
+        if alive_snake_index is not None and players_alive:
             winner_lbl = self.main_menu.fonts["medium"].render(f"Player {alive_snake_index + 1} won by domination!", True, (255, 255, 255))
             winner_lbl.blit(self.main_menu.fonts["medium"].render(f" " * len(f"Player {alive_snake_index + 1} won by ") + "domination", True, (255, 150, 0)), (0, 0))
         else:
@@ -624,8 +631,8 @@ class Snither:
                 if len(snake.body) > len(self.snakes[winner_snake_index].body):
                     winner_snake_index = i
 
-            winner_lbl = self.main_menu.fonts["medium"].render(f"{alive_snake_index + 1} won by length!", True, (255, 255, 255))
-            winner_lbl.blit(self.main_menu.fonts["medium"].render(f" " * len(f"{alive_snake_index + 1} won by " + "length"), True, (0, 255, 0)), (0, 0))
+            winner_lbl = self.main_menu.fonts["medium"].render(f"Player {best_snake_index + 1} won by length!", True, (255, 255, 255))
+            winner_lbl.blit(self.main_menu.fonts["medium"].render(f" " * len(f"Player {best_snake_index + 1} won by ") + "length", True, (0, 255, 0)), (0, 0))
 
         self.display_surf.blit(winner_lbl, (self.WIDTH // 2 - winner_lbl.width // 2, 100 + go_lbl.height + 50))
 
@@ -636,8 +643,8 @@ class Snither:
         curr_y = scores_lbl_y + scores_lbl.height + 20 + 30
         spacing = 40
 
-        for i, snake in enumerate(sorted(self.snakes, key=lambda snake: len(snake.body), reverse=True)):
-            score_lbl = self.main_menu.fonts["medium"].render(f"Player {i + 1} - {len(snake.body)}", True, snake.og_color)
+        for i, snake in enumerate(sorted_snakes):
+            score_lbl = self.main_menu.fonts["medium"].render(f"Player {self.snakes.index(snake) + 1} - {len(snake.body)}", True, snake.og_color)
             self.display_surf.blit(score_lbl, (self.WIDTH // 2 - 200, curr_y))
 
             curr_y += spacing
@@ -741,7 +748,7 @@ class Snither:
                         snake.draw(screen, screen_rects[s])
 
                 if alive_snake_count <= 1 or alive_player_count == 0:
-                    self.show_game_over(alive_snake_index)
+                    self.show_game_over(alive_snake_index, alive_player_count > 0)
                     return
 
                 for apple in self.apples:
