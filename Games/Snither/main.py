@@ -665,6 +665,8 @@ class Snither:
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_SPACE:
+                        if time() - start_time < 5: continue
+
                         reset_game()
                         return
 
