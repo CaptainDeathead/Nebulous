@@ -91,6 +91,7 @@ class CartridgeLoader:
         if TESTING:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
             from Games.Snither.consolemain import ConsoleEntry
+            #from Games.Racer.consolemain import ConsoleEntry
             self.on_title_launch(ConsoleEntry)
             return
 
