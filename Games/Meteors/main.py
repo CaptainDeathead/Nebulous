@@ -12,7 +12,7 @@ from typing import Sequence, List, Tuple, Dict
 
 pg.init()
 
-FONTS_PATH = "./Console/UI/Fonts"
+FONTS_PATH = "./UI/Fonts"
 
 class DIRECTION:
     UP    = 1
@@ -94,54 +94,142 @@ class Screen(pg.Surface):
     def pos(self) -> Sequence[int]: return (self.positioning_rect.x, self.positioning_rect.y)
 
 class Player:
-    def __init__(self) -> None:
-        ...
+    def __init__(self, controller: Controller) -> None:
+        self.controller = controller
+        self.ready = False
+
+    @property
+    def ready_text(self) -> str:
+        if not self.controller.plugged_in: return "❓" # Should come out as ascii red question mark in the font
+        if self.ready: return "Ready"
+        else: return "Not ready"
+
+    @property
+    def ready_color(self) -> str:
+        if not self.controller.plugged_in: return pg.Color(255, 0, 0)
+        if self.ready: return pg.Color(0, 255, 0)
+        else: return pg.Color(255, 0, 0)
 
 class MainMenu:
-    def __init__(self, display_surf: pg.Surface) -> None:
+    TIMER_LENGTH = 1
+
+    def __init__(self, display_surf: pg.Surface, console_update: object, controllers: List[Controller]) -> None:
         self.display_surf = display_surf
+        self.console_update = console_update
+        self.controllers = controllers
+
+        self.clock = pg.time.Clock()
+
+        self.players = [Player(controller) for controller in self.controllers]
 
         self.width = display_surf.width
         self.height = display_surf.height
 
         self.fonts = {
-            "small": pg.font.Font(f"{FONTS_PATH}/PressStart2P.ttf", 20),
-            "medium": pg.font.Font(f"{FONTS_PATH}/PressStart2P.ttf", 30),
+            "small": pg.font.Font(f"{FONTS_PATH}/PressStart2P.ttf", 16),
+            "medium": pg.font.Font(f"{FONTS_PATH}/PressStart2P.ttf", 32),
             "large": pg.font.Font(f"{FONTS_PATH}/PressStart2P.ttf", 40)
         }
 
-        title_lbl = self.fonts["large"].render("Meteors", True, (255, 255, 255))
-        self.display_surf.blit(title_lbl, (self.width // 2, 20))
+        self.title_lbl = self.fonts["large"].render("Meteors", True, (255, 255, 255))
+
+        self.info_lbl = self.fonts["medium"].render   ("Press A to ready / unready...", True, (255, 255, 255))
+        self.info_lbl.blit(self.fonts["medium"].render("      A", True, (0, 255, 0)))
+
+
+        self.timer_active = False
+        self.timer_time = self.TIMER_LENGTH
+        self.timer_start_time = time()
+        self.start_game = False
+
+        self.timer_start_lbl = self.fonts["medium"].render("Game starting in  ...", True, (255, 255, 255))
+        self.timer_end_lbls = [self.fonts["medium"].render(f"                 {i}", True, (0, 0, 255)) for i in range(self.timer_time, -1, -1)]
+
+        self.players[0].ready = True
+        self.players[0].controller.plugged_in = True
+
+        self.main()
 
     def draw_player_buttons(self) -> None:
-        players_box_w = 400
-        players_box = pg.Rect(self.width // 2 - players_box_w // 2, self.height // 2 - players_box_w // 2, players_box_w, players_box_w)
+        self.players_box_w = 500
+        self.players_box_h = 400
+        players_box = pg.Rect(self.width // 2 - self.players_box_w // 2, self.height // 2 - self.players_box_w // 2, self.players_box_w, self.players_box_h)
         pg.draw.rect(self.display_surf, (150, 150, 150), players_box)
 
-        btn_width = 300
-        btn_height = 100
+        btn_width = 400
+        btn_height = 75
         btn_padding = 20
 
         btn_x = self.width // 2 - btn_width // 2
 
-        curr_y = btn_padding
+        curr_y = players_box.y + btn_padding
         for player_index in range(4):
             btn_rect = pg.Rect(btn_x, curr_y, btn_width, btn_height)
             pg.draw.rect(self.display_surf, (200, 200, 200), btn_rect)
 
-            player_ready_text_start = self.fonts["small"].render(f"Player {player_index + 1} - ", True, (255, 255, 255))
+            player_ready_text_start = self.fonts["small"].render(f"Player {player_index + 1} - ", True, (0, 0, 0))
             player_ready_text_end = self.fonts["small"].render(f"{self.players[player_index].ready_text}", True, self.players[player_index].ready_color)
 
-            self.display_surf.blit(player_ready_text_start, (self.width // 2 - (player_ready_text_start.width + player_ready_text_end.width) // 2, curr_y))
-            self.display_surf.blit(player_ready_text_end, (self.width // 2 - (player_ready_text_start.width + player_ready_text_end.width) // 2 + player_ready_text_start.width, curr_y))
+            text_y = curr_y + btn_height // 2 - player_ready_text_start.height // 2
+
+            self.display_surf.blit(player_ready_text_start, (self.width // 2 - (player_ready_text_start.width + player_ready_text_end.width) // 2, text_y))
+            self.display_surf.blit(player_ready_text_end, (self.width // 2 - (player_ready_text_start.width + player_ready_text_end.width) // 2 + player_ready_text_start.width, text_y))
 
             curr_y += btn_height + btn_padding
+
+    def reset_timer(self) -> None:
+        self.timer_active = False
+        self.timer_time = self.TIMER_LENGTH
+        self.timer_last_update = time()
+
+    def check_game_start(self) -> None:
+        for player in self.players:
+            if player.controller.plugged_in and not player.ready:
+                self.reset_timer()
+                return
+            
+            self.timer_time = time() - self.timer_start_time
+            self.timer_active = True
+
+            if self.timer_time >= self.TIMER_LENGTH:
+                self.start_game = True
+
+    def main(self) -> None:
+        while not self.start_game:
+            self.display_surf.fill((0, 0, 0))
+            self.clock.tick(60)
+
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    pass
+
+            for i, controller in enumerate(self.controllers):
+                for event in controller.event.get():
+                    if event.type == CONTROLS.ABXY.A:
+                        self.players[i].ready = not self.players[i].ready
+
+            self.draw_player_buttons()
+
+            self.display_surf.blit(self.title_lbl, (self.width // 2 - self.title_lbl.width // 2, 100))
+            
+            if self.timer_active:
+                curr_time_int = max(0, min(int(round(self.timer_time, 0)), len(self.timer_end_lbls) - 1))
+                self.display_surf.blit(self.timer_start_lbl, (self.width // 2 - self.timer_start_lbl.width // 2, self.height - 200))
+                self.display_surf.blit(self.timer_end_lbls[curr_time_int-1], (self.width // 2 - self.timer_start_lbl.width // 2, self.height - 200))
+            else:
+                self.display_surf.blit(self.info_lbl, (self.width // 2 - self.info_lbl.width // 2, self.height - 200))
+
+            self.check_game_start()
+
+            self.console_update()
+
+            pg.display.flip()
 
 class Meteors:
     PYGAME_INFO: any = pg.display.Info()
     WIDTH: int = PYGAME_INFO.current_w
     HEIGHT: int = PYGAME_INFO.current_h
-    NUM_SHIPS = 4
+    NUM_SHIPS = 1
     PLAYING_FIELD_SIZE = -1
     STEP_INTERVAL = 0.15
 
@@ -182,8 +270,8 @@ class Meteors:
         curr_y = scores_lbl_y + scores_lbl.height + 20 + 30
         spacing = 40
 
-        for i, ship in enumerate(sorted(self.ships, key=lambda ship: len(ship.score), reverse=True)):
-            score_lbl = self.main_menu.fonts["medium"].render(f"Player {i + 1} - {len(ship.score)}", True, ship.og_color)
+        for i, ship in enumerate(sorted(self.ships, key=lambda ship: ship.score, reverse=True)):
+            score_lbl = self.main_menu.fonts["medium"].render(f"Player {i + 1} - {ship.score}", True, ship.color)
             self.display_surf.blit(score_lbl, (self.WIDTH // 2 - 200, curr_y))
 
             curr_y += spacing
@@ -221,13 +309,13 @@ class Meteors:
                     pass
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_UP:
-                        self.snakes[0].face_up()
+                        self.ships[0].face_up()
                     elif event.key == pg.K_RIGHT:
-                        self.snakes[0].face_right()
+                        self.ships[0].face_right()
                     elif event.key == pg.K_DOWN:
-                        self.snakes[0].face_down()
+                        self.ships[0].face_down()
                     elif event.key == pg.K_LEFT:
-                        self.snakes[0].face_left()
+                        self.ships[0].face_left()
                     elif event.key == pg.K_a:
                         #shoot bullet
                         self.bullets.append(Bullet([self.ships[0].x, self.ships[1].y], self.ships[0].color), self.ships[0].direction)
@@ -245,7 +333,6 @@ class Meteors:
                 for i, ship in enumerate(self.ships):
                     if not ship.dead:
                         alive_snake_index = i
-                    ship.move()
                     
                 if alive_player_count == 0:
                     self.show_game_over(alive_snake_index)

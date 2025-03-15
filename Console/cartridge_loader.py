@@ -86,7 +86,7 @@ class CartridgeLoader:
     def load_cartridge(self) -> None:
         if TESTING:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-            from Games.Snither.consolemain import ConsoleEntry
+            from Games.Meteors.consolemain import ConsoleEntry
             self.on_title_launch(ConsoleEntry)
             return
 

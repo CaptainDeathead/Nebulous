@@ -53,7 +53,7 @@ class Console:
         self.WIDTH = self.pygame_info.current_w
         self.HEIGHT = self.pygame_info.current_h
 
-        self.screen = pg.display.set_mode((self.WIDTH, self.HEIGHT), pg.FULLSCREEN | pg.DOUBLEBUF | pg.HWSURFACE, display=1)
+        self.screen = pg.display.set_mode((self.WIDTH, self.HEIGHT), pg.FULLSCREEN | pg.DOUBLEBUF | pg.HWSURFACE)
         self.clock = pg.time.Clock()
 
     def init_menu_interface(self) -> None:
