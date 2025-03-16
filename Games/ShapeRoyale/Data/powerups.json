@@ -14,16 +14,16 @@
                 "effect": "player.shield.percentage_increase",
                 "value": 1.2
             },
-            "Endurance": {
-                "blurb": "I could do this all day!",
-                "description": "Increases max player statima by 20%",
-                "effect": "player.stamina.percentage_increase",
-                "value": 1.2
-            },
             "Speed": {
                 "blurb": "I'm no tortoise!",
                 "description": "Increases max player speed by 20%",
                 "effect": "player.speed.percentage_increase",
+                "value": 1.2
+            },
+            "Self-healing Membrane": {
+                "blurb": "You may slice me down, but you'll be doing it for a long time...",
+                "description": "Increases shield regeneration rate by 20%",
+                "effect": "player.shieldregenrate.percentage_increase",
                 "value": 1.2
             }
         }
@@ -53,12 +53,6 @@
                 "blurb": "Not much more to say about Mum's favorite kitchen knife souring through the air at 463.78km/h.",
                 "description": "Increases bullet penetration by 20%",
                 "effect": "player.penetration.percentage_increase",
-                "value": 1.2
-            },
-            "Self-healing Membrane": {
-                "blurb": "You may slice me down, but you'll be doing it for a long time...",
-                "description": "Increases shield regeneration rate by 20%",
-                "effect": "player.shieldregenrate.percentage_increase",
                 "value": 1.2
             }
         }
@@ -98,7 +92,7 @@
             "Pacemaker": {
                 "blurb": "Waaiiitttiiinnngggg for my enimies to catch up...",
                 "description": "Health regenerates itself by +5HP per second",
-                "effect": "player.healthregen.increase",
+                "effect": "player.healthregenrate.increase",
                 "value": 5
             },
             "Plasma Gun": {

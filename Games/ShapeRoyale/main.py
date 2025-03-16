@@ -5,10 +5,204 @@ from Console.sound import generate_sine_wave
 
 from time import time
 from json import loads
+from math import dist
 
-from typing import List, Sequence
+from typing import List, Sequence, Dict
 
 FONTS_PATH = "./UI/Fonts"
+
+class Poison:
+    def __init__(self, deal_damage_func: object, on_poison_end: object, damage: int, duration: int) -> None:
+        self.deal_damage_func = deal_damage_func
+        self.on_poison_end = on_poison_end
+
+        self.damage = damage
+        self.duration = duration
+
+        self.last_tick_time = time()
+
+    def update(self) -> None:
+        if time() - self.last_tick_time >= 1:
+            self.duration -= time() - self.last_tick_time
+            self.last_tick_time = time()
+
+            self.deal_damage_func(self.damage)
+
+            if self.duration <= 0: self.on_poison_end(self)
+
+class Bullet:
+    def __init__(self, parent: any, x: float, y: float, velocity: List[float, float], base_damage: int, damage_growth: float, poison_damage: int, penetration: float) -> None:
+        self.parent = parent
+        
+        self.start_x = x
+        self.start_y = y
+
+        self.x = x
+        self.y = y
+        self.velocity = velocity
+
+        self.base_damage = base_damage
+        self.damage_growth = damage_growth
+        self.poison_damage = poison_damage
+        self.penetration = penetration
+
+    @property
+    def distance_travelled(self) -> float:
+        return dist(self.x - self.start_x, self.y - self.start_y)
+
+    def move(self, dt: float) -> None:
+        self.x += self.velocity[0] * dt
+        self.y += self.velocity[1] * dt
+
+    def hit(self, target: any) -> None:
+        health_damage = self.base_damage * (self.damage_growth * self.distance_travelled)
+        shield_damage = health_damage * self.penetration
+
+        target.take_damage(health_damage)
+        target.take_shield_damage(shield_damage)
+
+        if self.poison_damage > 0:
+            target.add_poison(self.poison_damage)
+
+class Shape:
+    POISON_DURATION = 10
+
+    def __init__(self, x: float, y: float, shape_name: str, shape_info: Dict[str, Dict], shape_image: pg.Surface, bullets: List[Bullet],
+                 is_player: bool, controller: Controller | None = None) -> None:
+
+        self.x = x
+        self.y = y
+
+        self.shape_name = shape_name
+        self.shape_info = shape_info
+        self.info = self.shape_info[self.shape_name]
+
+        self.shape_image = shape_image
+
+        self.is_player = is_player
+        self.controller = controller
+
+        self.max_hp = self.info['hp'] # literal
+        self.max_shield = self.info['shield'] # literal
+        self.max_speed = self.info['speed'] # literal
+        self.damage = self.info['damage'] # literal
+        self.firerate = self.info['firerate'] # literal 
+        self.bullet_speed = self.info['bullet_speed'] # literal
+        self.penetration = self.info['penetration'] # percent
+        self.shield_regen = self.info['shield_regen'] # literal
+        self.lifesteal = 1.0 # percent
+        self.poison_damage = 0 # literal
+        self.zone_resistance = 1.0 # percent
+        self.health_regen_rate = self.info["health_regen"] # literal
+        self.damage_growth = 1.0 # percent
+
+        self.hp = self.max_hp
+        self.shield = self.max_shield
+
+        self.velocity = [0.0, 0.0]
+
+        self.last_shoot_time = 0
+
+        self.bullets = bullets
+
+    def change_var_value(var: object, value_type: str, value: any) -> None:
+        if value_type == 'percentage_increase':
+            var *= value
+
+        elif value_type == 'increase':
+            var += value
+
+    def parse_effect(self, effect: str, value: any) -> None:
+        """Target.Effect.Valuetype, value"""
+
+        args = effect.split('.')
+
+        if len(args) < 3:
+            raise Exception("Provided args is not valid! 'arg1.arg2.arg3' is required!")
+
+        if args[0] == 'player':
+            var = None
+
+            match args[1]:
+                case 'maxhp': var = self.max_hp
+                case 'shield': var = self.max_shield
+                case 'speed': var = self.max_speed
+                case 'damage': var = self.damage
+                case 'firerate': var = self.firerate
+                case 'bulletspeed': var = self.bullet_speed
+                case 'penetration': var = self.bullet_penetration
+                case 'shieldregenrate': var = self.shield_regen_rate
+                case 'lifesteal': var = self.lifesteal
+                case 'poisondamage': var = self.poison_damage
+                case 'zoneresistance': var = self.zone_resistance
+                case 'healthregenrate': var = self.health_regen_rate
+                case 'damagegrowth': var = self.damage_growth
+
+            self.change_var_value(var, args[2], value)
+
+    def take_damage(self, damage: float) -> None:
+        self.hp -= damage
+
+        if self.hp <= 0:
+            self.die()
+
+    def take_shield_damage(self, shield_damage: float) -> None:
+        leftover_shield_damage = shield_damage - self.shield
+
+        if leftover_shield_damage > 0:
+            self.take_damage(leftover_shield_damage)
+            self.shield = 0
+        else:
+            self.shield -= shield_damage
+
+    def on_poison_end(self, poison: Poison) -> None:
+        self.poisons.remove(poison)
+
+    def add_poison(self, poison_damage: int) -> None:
+        self.poisons.append(Poison(self.take_damage, self.on_poison_end, poison_damage, self.POISON_DURATION))
+
+    def move_up(self) -> None:
+        self.velocity[1] = -self.max_speed
+        self.rotation = 0
+
+    def move_right(self) -> None:
+        self.velocity[0] = self.max_speed
+        self.rotation = 90
+
+    def move_down(self) -> None:
+        self.velocity[1] = self.max_speed
+        self.rotation = 180
+
+    def move_left(self) -> None:
+        self.velocity[0] = -self.max_speed
+        self.rotation = 270
+
+    def shoot(self) -> None:
+        if time() - self.last_shoot_time >= 1 / self.firerate:
+            self.last_shoot_time = time()
+
+            if self.velocity[0] == 0 and self.velocity[1] == 0:
+                match self.rotation:
+                    case 0: bullet_vel = [0, -self.max_speed * (self.bullet_speed + 1)]
+                    case 90: bullet_vel = [-self.max_speed * (self.bullet_speed + 1), 0]
+                    case 180: bullet_vel = [0, self.max_speed * (self.bullet_speed + 1)]
+                    case 270: bullet_vel = [self.max_speed * (self.bullet_speed + 1), 0]
+            else: 
+                bullet_vel = [self.velocity[0] * (self.bullet_speed + 1), self.velocity[1] * (self.bullet_speed + 1)]
+
+            self.bullets.append(Bullet(self, self.x, self.y, bullet_vel, self.damage, self.damage_growth, self.poison_damage, self.penetration))
+
+    def update(self, dt: float) -> None:
+        if self.is_player:
+            for event in self.controller.event.get():
+                if event.type == CONTROLS.DPAD.UP: self.move_up()
+                elif event.type == CONTROLS.DPAD.RIGHT: self.move_right()
+                elif event.type == CONTROLS.DPAD.DOWN: self.move_down()
+                elif event.type == CONTROLS.DPAD.LEFT: self.move_left()
+
+                elif event.type == CONTROLS.ABXY.B: self.shoot()
+        else:
+            self.ai_move()
 
 class Screen(pg.Surface):
     def __init__(self, rect: pg.Rect, flags: int = 0) -> None:
