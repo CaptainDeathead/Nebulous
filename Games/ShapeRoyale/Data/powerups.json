@@ -1,6 +1,7 @@
 {
     "Common": {
         "spawn_chance": 0.4,
+        "color": "(0, 255, 0)",
         "types": {
             "Health Pack": {
                 "blurb": "Some would say there's no such thing as a free lunch... well here it is!",
@@ -30,6 +31,7 @@
     },
     "Uncommon": {
         "spawn_chance": 0.3,
+        "color": "(0, 0, 255)",
         "types": {
             "Sniper": {
                 "blurb": "Why have health when you can have POWER! (Or both, that works too)",
@@ -59,6 +61,7 @@
     },
     "Rare": {
         "spawn_chance": 0.2,
+        "color": "(255, 0, 255)",
         "types": {
             "Blood Donor": {
                 "blurb": "Gimme all your blood :)",
@@ -88,6 +91,7 @@
     },
     "Legendary": {
         "spawn_chance": 0.1,
+        "color": "(255, 215, 0)",
         "types": {
             "Pacemaker": {
                 "blurb": "Waaiiitttiiinnngggg for my enimies to catch up...",
