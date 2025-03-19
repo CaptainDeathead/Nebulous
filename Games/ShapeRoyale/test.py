@@ -41,6 +41,8 @@ target = (150, 150)
 
 clock = pygame.time.Clock()
 
+x, y = 100, 100
+
 # Draw the polygon
 running = True
 while running:
@@ -54,7 +56,8 @@ while running:
     points = shrink(target, points)
 
     # Draw the polygon by connecting the points
-    pygame.draw.polygon(screen, BLUE, points, 2)
+    actuall_points = [(px - x, py - y) for px, py in points]
+    pygame.draw.polygon(screen, BLUE, actuall_points, 2)
 
     # Draw the center of the circle for reference
     pygame.draw.circle(screen, (255, 0, 0), center, 5)

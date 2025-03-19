@@ -107,7 +107,7 @@ class Powerup:
         self.value = self.info["value"]
 
         self.image = pg.Surface((self.WIDTH, self.HEIGHT), pg.SRCALPHA)
-        pg.draw.aacircle(self.image, self.color, (self.x, self.y), self.WIDTH)
+        pg.draw.aacircle(self.image, self.color, (self.WIDTH // 2, self.HEIGHT // 2), self.WIDTH // 2)
 
     def render_popup(self) -> pg.Surface:
         title_font = pg.font.Font(f"{FONTS_PATH}/PressStart2P.ttf", size=40)
@@ -268,7 +268,6 @@ class Shape:
         self.hp = min(self.max_hp, self.hp + lifesteal_health)
 
     def move_up(self, dt: float) -> None:
-        print(self.max_speed, dt)
         self.y -= self.max_speed * dt * 30
         self.rotation = 0
 
@@ -334,6 +333,9 @@ class Shape:
 
         screen.blit(image, (self.x - screen_rect.x, self.y - screen_rect.y))
 
+        if self.showing_powerup_popup:
+            screen.blit(self.powerup_popup, (screen.width // 2 - self.powerup_popup.width // 2, screen.height // 2 - self.powerup_popup.height // 2))
+
 class Screen(pg.Surface):
     def __init__(self, rect: pg.Rect, flags: int = 0) -> None:
         self.positioning_rect = rect
@@ -384,7 +386,7 @@ class Safezone:
         self.color = pg.Color(255, 0, 0)
 
         self.polygon = self.generate_circle_polygon(self.start_radius, (self.map_size_x / 2, self.map_size_y / 2), self.NUM_POINTS)
-        self.shapely_polygon = Polygon(self.polygon)
+        self.surface = pg.Surface((1_000, 1_000))
         
         self.next_phase()
 
@@ -402,13 +404,17 @@ class Safezone:
         return points
 
     def next_phase(self) -> None:
-        if self.phase_index == len(self.phase_config) - 1: return
+        if self.phase_index >= len(self.phase_config) - 1:
+            self.target_radius = 0
+            self.distances_to_move = self.calculate_distances()
+            return
 
         self.phase_index += 1
 
         self.target = self.phase_config[self.phase_index]["target"]
         self.target_radius = self.phase_config[self.phase_index]["radius"]
-        self.zone_speed = 1 / (self.phase_config[self.phase_index]["time"] / 60)
+        self.zone_speed = 0.01
+        self.distances_to_move = self.calculate_distances()
 
     def calculate_distances(self) -> List[float]:
         distances = []
@@ -433,25 +439,23 @@ class Safezone:
             radius_sum += curr_distance_to_move
 
         avg_radius = radius_sum / len(self.polygon)
-        if avg_radius < self.target_radius * self.TARGET_RADIUS_ALLOWANCE:
+        if avg_radius < 200:
             self.next_phase()
 
         self.polygon = new_polygon
-        self.shapely_polygon = Polygon(self.polygon)
 
     def update(self, dt: float) -> None:
-        if self.phase_index == len(self.phase_config) - 1: return
-
         self.shrink(dt)
 
-    def draw(self, screen: pg.Surface, draw_parent: any) -> None:
-        px = draw_parent.x + draw_parent.rect.w // 2
-        py = draw_parent.y + draw_parent.rect.h // 2
-        visible_polygon = self.shapely_polygon.intersection(box(px - screen.width // 2, py - screen.height // 2, px + screen.width // 2, py + screen.height // 2))
+    def draw(self) -> None:
+        screen_verts = [(px//100, py//100) for px, py in self.polygon]
 
-        if not self.shapely_polygon.is_empty and len(visible_polygon.exterior.coords) > 2:
-            relative_polygon = [(int(x - px), int(y - py)) for x, y in visible_polygon.exterior.coords]
-            pg.draw.polygon(screen, self.color, relative_polygon)
+        self.surface.fill((255, 0, 0))
+        pg.draw.polygon(self.surface, (0, 0, 0), screen_verts)
+        #pg.image.save(self.surface, 'e.png')
+
+    def blit(self, screen: pg.Surface, draw_parent: Player) -> None:
+        screen.blit(self.surface, (0, 0), (draw_parent.x//100, draw_parent.y//100, screen.width//100, screen.height//100))
 
 class MainMenu:
     TIMER_LENGTH = 6
@@ -500,6 +504,12 @@ class MainMenu:
             self.shape_info = loads(f.read())
 
         self.players[0].controller.plugged_in = True
+        #self.players[1].controller.plugged_in = True
+        #self.players[1].ready = True
+        #self.players[2].controller.plugged_in = True
+        #self.players[2].ready = True
+        #self.players[3].controller.plugged_in = True
+        #self.players[3].ready = True
 
         self.main()
 
@@ -629,17 +639,22 @@ class ShapeRoyale:
     WIDTH: int = PYGAME_INFO.current_w
     HEIGHT: int = PYGAME_INFO.current_h
 
-    MAP_SIZE = 10_000
+    MAP_SIZE = 100_000
     MAP_SIZE_X = MAP_SIZE
     MAP_SIZE_Y = MAP_SIZE
 
-    NUM_PHASES = 1
+    NUM_PHASES = 4
     NUM_PLAYERS = 100
-    NUM_POWERUPS = 1000
+    NUM_POWERUPS = 2400 # this must be divisible by the NUM_POWERUP_SECTIONS below
+    NUM_POWERUP_SECTIONS = 6
+    POWERUP_SECTION_SIZE = int(NUM_POWERUPS / NUM_POWERUP_SECTIONS)
 
     MAX_BULLET_TRAVEL_DIST = 2000
 
     def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller]) -> None:
+        if not (self.NUM_POWERUPS / self.NUM_POWERUP_SECTIONS).is_integer() or self.NUM_POWERUPS % self.NUM_POWERUP_SECTIONS != 0:
+            raise Exception("NUM_POWERUPS must be divisible by NUM_POWERUP_SECTIONS such that the resualt is a valid integer!")
+
         self.display_surf = display_surf
         self.console_update = console_update
         self.get_num_players = get_num_players
@@ -676,6 +691,9 @@ class ShapeRoyale:
         self.bullets = []
         self.players = self.generate_players()
         self.powerups = self.generate_powerups()
+
+        self.powerup_sections = [(i*self.POWERUP_SECTION_SIZE, (i+1)*self.POWERUP_SECTION_SIZE) for i in range(self.NUM_POWERUP_SECTIONS)]
+        self.powerup_section_index = 0
 
         self.fps_font = pg.font.SysFont(f"{FONTS_PATH}/PressStart2P.ttf", 30)
 
@@ -790,6 +808,7 @@ class ShapeRoyale:
         self.powerups.remove(powerup)
     
     def main(self) -> None:
+        last_safezone_draw = 0
         while 1:
             dt = self.clock.tick(60) / 1000.0
 
@@ -798,10 +817,17 @@ class ShapeRoyale:
                     pg.quit()
                     exit()
 
-            keys = pg.key.get_pressed()
+            self.safezone.update(dt)
 
-            for screen in self.screens:
-                screen.fill((0, 0, 0))
+            if time() - last_safezone_draw > 0.5:
+                self.safezone.draw()
+                last_safezone_draw = time()
+
+            for s, screen in enumerate(self.screens):
+                screen.fill((255, 0, 0))
+                self.safezone.blit(screen, self.players[s])
+
+            keys = pg.key.get_pressed()
 
             if keys[pg.K_UP]: self.players[0].move_up(dt)
             elif keys[pg.K_RIGHT]: self.players[0].move_right(dt)
@@ -813,19 +839,9 @@ class ShapeRoyale:
             for player in self.players:
                 player.update(dt)
 
-
                 for s, screen in enumerate(self.screens):
                     player.draw(screen, self.players[s])
 
-                    for powerup in self.powerups:
-                        powerup_dist = dist((powerup.x, powerup.y), (player.x + player.rect.w // 2, player.y + player.rect.h // 2))
-
-                        if powerup_dist >= 2000: continue
-
-                        if powerup_dist <= player.rect.w:
-                            powerup.pickup(player)
-                        
-                        powerup.draw(screen, self.players[s])
 
                     for bullet in self.bullets:
                         bullet.draw(screen, self.players[s])
@@ -839,11 +855,28 @@ class ShapeRoyale:
                             if bullet.distance_travelled > self.MAX_BULLET_TRAVEL_DIST:
                                 self.bullets.remove(bullet)
 
+                for powerup in self.powerups[self.powerup_sections[self.powerup_section_index][0]:self.powerup_sections[self.powerup_section_index][1]]:
+                    powerup_dist_x = abs(powerup.x - player.x)
+                    powerup_dist_y = abs(powerup.y - player.y)
+    
+                    if powerup_dist_x <= -1000 or powerup_dist_x >= 1000 or powerup_dist_y <= -1000 or powerup_dist_y >= 1000: continue
+
+                    powerup_dist = dist((powerup.x, powerup.y), (player.x, player.y))
+
+                    if powerup_dist <= player.rect.w:
+                        powerup.pickup(player)
+                    
+                    powerup.draw(screen, self.players[s])
+
             for s, screen in enumerate(self.screens):
-                self.safezone.draw(screen, self.players[s])
+                for powerup in self.powerups:
+                    powerup.draw(screen, self.players[s])
 
                 self.display_surf.blit(screen, screen.pos)
 
             self.display_surf.blit(self.fps_font.render(f"{self.clock.get_fps():.2f}", True, (255, 255, 255)), (20, 20))
+
+            self.powerup_section_index += 1
+            if self.powerup_section_index >= self.NUM_POWERUP_SECTIONS: self.powerup_section_index = 0
 
             pg.display.flip()

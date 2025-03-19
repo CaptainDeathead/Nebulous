@@ -1,6 +1,6 @@
 {
     "Common": {
-        "spawn_chance": 0.4,
+        "spawn_chance": 0.44,
         "color": "(0, 255, 0)",
         "types": {
             "Health Pack": {
@@ -30,7 +30,7 @@
         }
     },
     "Uncommon": {
-        "spawn_chance": 0.3,
+        "spawn_chance": 0.35,
         "color": "(0, 0, 255)",
         "types": {
             "Sniper": {
@@ -90,7 +90,7 @@
         }
     },
     "Legendary": {
-        "spawn_chance": 0.1,
+        "spawn_chance": 0.01,
         "color": "(255, 215, 0)",
         "types": {
             "Pacemaker": {
