@@ -21,7 +21,7 @@ from zipfile import ZipFile
 from time import sleep
 
 # TODO: THIS IS ONLY FOR TESTING WITHOUT SD_CARDS IN THE PI
-TESTING = True
+TESTING = False
 
 class CartridgeLoader:
     SD_BLOCK_SIZE = 512
