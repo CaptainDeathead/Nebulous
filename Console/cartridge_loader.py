@@ -36,16 +36,17 @@ class CartridgeLoader:
         except Exception as e:
             logging.error(f"Failed to initialize cartridge (sd) SPI interface!!! Error: {e}! Assuming this is a non-console test so continuing...")
 
-    def read_sd_block(sd, block_num):
+    def read_sd_block(self, block_num) -> bytes:
         try:
             # Read a block (512 bytes)
             block_data = bytearray(512)
             self.sdcard.readblocks(block_num, block_data)
-            print(f"Block {block_num}: {block_data[:512]}...")  # Print first 16 bytes
+            print(f"Block {block_num}: {block_data}...")  # Print first 16 bytes
+            return block_data
         except Exception as e:
             print("Error reading SD block:", e)
 
-    def write_sd_block(sd, block_num, data):
+    def write_sd_block(self, block_num, data):
         try:
             # Write data to a block (ensure it's 512 bytes)
             if len(data) > 512:
