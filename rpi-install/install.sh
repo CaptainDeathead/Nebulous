@@ -9,7 +9,7 @@ echo "Installing required packages..."
 sudo apt update && sudo apt install -y xserver-xorg xinit x11-xserver-utils python3 python3-pip python3-rpi.gpio python3-gpiozero
 
 echo "Installing pip modules..."
-pip install pygame-ce numpy --break-system-packages
+pip install pygame-ce numpy adafruit-circuitpython-sd adafruit-circuitpython-busdevice --break-system-packages
 
 echo "Creating ~/.xinitrc..."
 cat <<EOF > ~/.xinitrc

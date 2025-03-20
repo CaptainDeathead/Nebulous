@@ -5,7 +5,10 @@ import logging
 import importlib
 
 try:
-    from spidev import SpiDev
+    import board
+    import busio
+    import digitalio
+    import adafruit_sdcard
     TESTING = False
 except:
     TESTING = True
@@ -27,53 +30,33 @@ class CartridgeLoader:
         self.on_title_launch = on_title_launch
 
         try:
-            self.spi = SpiDev()
-            self.spi.open(0, 1) # SPI Bus 0 CE1 (GPIO 7)
-            self.spi.max_speed_hz = 4_000_000 # 4 MHz
+            spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
+            cs = digitalio.DigitalInOut(board.CE1)  # Commonly CE0 (GPIO8) or CE1 (GPIO7)
+            self.sdcard = adafruit_sdcard.SDCard(spi, cs)
         except Exception as e:
             logging.error(f"Failed to initialize cartridge (sd) SPI interface!!! Error: {e}! Assuming this is a non-console test so continuing...")
 
-    def send_command(self, cmd: int, arg: int) -> bytes:
-        # Send SPI command to the SD card
-        # This is absolute majic that is definitly not worth the time to learn
-        cmd_packet = [0x40 | cmd] + [(arg >> (8 * i)) & 0xFF for i in range(3, -1, -1)] + [0x95]
-        self.spi.xfer2(cmd_packet)
-        sleep(0.1) # Allow time for a response
+    def read_sd_block(sd, block_num):
+        try:
+            # Read a block (512 bytes)
+            block_data = bytearray(512)
+            self.sdcard.readblocks(block_num, block_data)
+            print(f"Block {block_num}: {block_data[:512]}...")  # Print first 16 bytes
+        except Exception as e:
+            print("Error reading SD block:", e)
 
-        return self.spi.xfer2([0xFF]) # Get response
-
-    def sd_init(self) -> bool:
-        # Init SD card in SPI mode
-        for _ in range(10):
-            # Send 80 clock pulses to enter SPI mode
-            # SD card requires at least 74 clock pulses
-            self.spi.xfer2([0xFF])
-
-        # CMD0: Go idle
-        # This command resets the SD card ready for use
-        response = self.send_command(0, 0)
-
-        # 0x01 Means it is in it's idle state
-        if response[0] != 0x01:
-            raise Exception("Error while reading cartridge! SD Card init failed!!!")
-
-        return True
-
-    def read_sector(self, sector: int) -> bytes:
-        self.send_command(17, sector) # CMD17: Read single block
-
-        while 1:
-            # Just waiting for 0xFE to be recieved
-            # I think that means it's ready to send data
-            response = self.spi.xfer2([0xFF])[0]
-
-            if response == 0xFE: # Data token
-                break
-
-        data = self.spi.xfer2([0xFF] * self.SD_BLOCK_SIZE) # Reads the block with the given block size
-        self.spi.xfer2([0xFF] * 2) # Ignore CRC (last 2 bytes)
-
-        return bytes(data)
+    def write_sd_block(sd, block_num, data):
+        try:
+            # Write data to a block (ensure it's 512 bytes)
+            if len(data) > 512:
+                print("Data is too large for one block (max 512 bytes)")
+                return
+            block_data = bytearray(512)
+            block_data[:len(data)] = data
+            self.sdcard.writeblocks(block_num, block_data)
+            print(f"Written block {block_num}")
+        except Exception as e:
+            print("Error writing SD block:", e)
 
     def unzip_inmemory(self, zip_data: bytes) -> str:
         # Converts the zip_data into a "fake" file (filelike object)
@@ -87,6 +70,19 @@ class CartridgeLoader:
 
         return extracted_files
 
+    def flash_game(self) -> None:
+        game_name = input("Enter game name with no spaces or wierd characters: ")
+        game_path = input("Enter path to .tar.xz of game: ")
+
+        with open(game_path, "rb") as f:
+            xz = f.read()
+
+        self.write_sd_block(0, game_name.encode('utf-8'))
+        for i in range(1, (len(xz)-1) % self.SD_BLOCK_SIZE, self.SD_BLOCK_SIZE):
+            self.write_sd_block(i, xz[(i-1) * 512:i*512])
+
+        print("Flashed")
+
     def load_cartridge(self) -> None:
         if TESTING:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -98,37 +94,34 @@ class CartridgeLoader:
             self.on_title_launch(ConsoleEntry)
             return
 
-        if self.sd_init():
-            zip_data = b""
+        zip_data = b""
 
-            game_name = self.read_sector(0).decode()
+        game_name = self.read_sector(0).decode()
 
-            logging.info(f"Loading {game_name} from cartridge...")
+        logging.info(f"Loading {game_name} from cartridge...")
 
-            for i in range(1, 100): # Read first 100 sectors (50KB)
-                zip_data += self.read_sector(i)
+        for i in range(1, 100*1000): # Read first 100 sectors (50KB)
+            zip_data += self.read_sector(i)
 
-            tmp_game_path = f"/tmp/Games/{game_name}/"
+        tmp_game_path = f"/tmp/Games/{game_name}/"
 
-            if os.path.exists('/tmp/Games'):
-                logging.debug("Cartridge already has an entry in /tmp! Removing it...")
-                rmtree('/tmp/Games', ignore_errors=True)
+        if os.path.exists('/tmp/Games'):
+            logging.debug("Cartridge already has an entry in /tmp! Removing it...")
+            rmtree('/tmp/Games', ignore_errors=True)
 
-            os.mkdir('/tmp/Games')
+        os.mkdir('/tmp/Games')
 
-            xz_buffer = BytesIO(zip_data)
+        xz_buffer = BytesIO(zip_data)
 
-            logging.debug("Extracting .tar.xz file into new /tmp directory...")
-            with tarfile.open(xz_buffer, 'r:xz') as tar:
-                tar.extractall(path=tmp_game_path)
+        logging.debug("Extracting .tar.xz file into new /tmp directory...")
+        with tarfile.open(xz_buffer, 'r:xz') as tar:
+            tar.extractall(path=tmp_game_path)
 
-            sys.path.append('/tmp') # Makes all the files in there discoverable.
-            
-            logging.info("Invoking ConsoleEntry from consolemain in the unzipped game...")
-            try:
-                consolemain = importlib.import_module(f"Games.{game_name}.consolemain")
-                self.on_title_launch(consolemain.ConsoleEntry)
-            except:
-                raise Exception("Failed to import ConsoleEntry from consolemain!")
-        else:
-            raise Exception("sd_init Failed! Something unclear went wrong when initializing the SD card. Check above logs for more possible info.")
+        sys.path.append('/tmp') # Makes all the files in there discoverable.
+        
+        logging.info("Invoking ConsoleEntry from consolemain in the unzipped game...")
+        try:
+            consolemain = importlib.import_module(f"Games.{game_name}.consolemain")
+            self.on_title_launch(consolemain.ConsoleEntry)
+        except:
+            raise Exception("Failed to import ConsoleEntry from consolemain!")
