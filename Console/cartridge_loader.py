@@ -94,14 +94,16 @@ class CartridgeLoader:
             self.on_title_launch(ConsoleEntry)
             return
 
+        self.flash_game()
+
         zip_data = b""
 
-        game_name = self.read_sector(0).decode()
+        game_name = self.read_sd_block(0).decode()
 
         logging.info(f"Loading {game_name} from cartridge...")
 
         for i in range(1, 100*1000): # Read first 100 sectors (50KB)
-            zip_data += self.read_sector(i)
+            zip_data += self.read_sd_block(i)
 
         tmp_game_path = f"/tmp/Games/{game_name}/"
 
