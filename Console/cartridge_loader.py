@@ -133,10 +133,12 @@ class CartridgeLoader:
 
         game_name = self.read_sd_block(0).decode()
         xz_length = int.from_bytes(self.read_sd_block(1))
+        print(f"{xz_length=}")
 
         logging.info(f"Loading {game_name} from cartridge...")
 
-        zip_data = self.read_sd_data(2, xz_length-1)
+        zip_data = self.read_sd_data(2, xz_length)
+        print(zip_data)
 
         tmp_game_path = f"/tmp/Games/{game_name}/"
 
