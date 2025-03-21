@@ -111,7 +111,7 @@ class CartridgeLoader:
             xz = f.read()
 
         self.write_sd_data(0, game_name.encode('utf-8'))
-        self.write_sd_data(1, bytes(len(xz)))
+        self.write_sd_block(1, len(xz).to_bytes(512))
         self.write_sd_data(2, xz)
 
         print("Flashed")
@@ -137,7 +137,7 @@ class CartridgeLoader:
 
         logging.info(f"Loading {game_name} from cartridge...")
 
-        zip_data = self.read_sd_data(2, xz_length)
+        zip_data = self.read_sd_data(2, xz_length-1)
         print(zip_data)
 
         tmp_game_path = f"/tmp/Games/{game_name}/"
