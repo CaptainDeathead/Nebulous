@@ -149,7 +149,7 @@ class CartridgeLoader:
         xz_buffer = BytesIO(zip_data)
 
         logging.debug("Extracting .tar.xz file into new /tmp directory...")
-        with tarfile.open(xz_buffer, 'r:xz') as tar:
+        with tarfile.open(fileobj=xz_buffer, mode='r:xz') as tar:
             tar.extractall(path=tmp_game_path)
 
         sys.path.append('/tmp') # Makes all the files in there discoverable.
