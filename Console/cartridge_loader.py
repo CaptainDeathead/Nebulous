@@ -132,7 +132,7 @@ class CartridgeLoader:
         zip_data = b""
 
         game_name = self.read_sd_block(0).decode()
-        xz_length = int(self.read_sd_block(1).decode())
+        xz_length = int.from_bytes(self.read_sd_block(1))
 
         logging.info(f"Loading {game_name} from cartridge...")
 
