@@ -111,7 +111,7 @@ class CartridgeLoader:
             xz = f.read()
 
         self.write_sd_data(0, game_name.encode('utf-8'))
-        self.write_sd_data(1, len(xz))
+        self.write_sd_data(1, bytes(len(xz)))
         self.write_sd_data(2, xz)
 
         print("Flashed")
