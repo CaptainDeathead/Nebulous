@@ -41,7 +41,6 @@ class CartridgeLoader:
             # Read a block (512 bytes)
             block_data = bytearray(512)
             self.sdcard.readblocks(block_num, block_data)
-            print(f"Block {block_num}: {block_data}...")  # Print first 16 bytes
             return block_data
         except Exception as e:
             print("Error reading SD block:", e)
@@ -55,9 +54,42 @@ class CartridgeLoader:
             block_data = bytearray(512)
             block_data[:len(data)] = data
             self.sdcard.writeblocks(block_num, block_data)
-            print(f"Written block {block_num}")
         except Exception as e:
             print("Error writing SD block:", e)
+
+    def read_sd_data(self, start_block, end_block):
+        data = bytearray()
+        
+        # Loop through each block from start_block to end_block
+        for block in range(start_block, end_block + 1):
+            block_data = self.read_sd_block(block)
+            data.extend(block_data)
+        
+        return bytes(data)
+
+    def write_sd_data(self, start_block, data):
+        sector_size = 512
+        data_len = len(data)
+        current_block = start_block
+        index = 0
+
+        while index < data_len:
+            # Calculate remaining data to write in the current sector
+            remaining_space_in_sector = sector_size - (index % sector_size)
+            data_to_write = data[index:index + remaining_space_in_sector]
+
+            # Write data to the current block
+            self.write_sd_block(current_block, data_to_write)
+            
+            # Move to the next block
+            index += len(data_to_write)
+            current_block += 1
+
+        # If there's partial data left at the last block, fill the rest with blank
+        if len(data) % sector_size != 0:
+            remaining_blank = sector_size - (len(data) % sector_size)
+            blank_data = bytes([0] * remaining_blank)
+            self.write_sd_block(current_block, blank_data)
 
     def unzip_inmemory(self, zip_data: bytes) -> str:
         # Converts the zip_data into a "fake" file (filelike object)
@@ -78,9 +110,9 @@ class CartridgeLoader:
         with open(game_path, "rb") as f:
             xz = f.read()
 
-        self.write_sd_block(0, game_name.encode('utf-8'))
-        for i in range(1, (len(xz)-1) % self.SD_BLOCK_SIZE, self.SD_BLOCK_SIZE):
-            self.write_sd_block(i, xz[(i-1) * 512:i*512])
+        self.write_sd_data(0, game_name.encode('utf-8'))
+        self.write_sd_data(1, len(xz))
+        self.write_sd_data(2, xz)
 
         print("Flashed")
 
@@ -100,11 +132,11 @@ class CartridgeLoader:
         zip_data = b""
 
         game_name = self.read_sd_block(0).decode()
+        xz_length = int(self.read_sd_block(1).decode())
 
         logging.info(f"Loading {game_name} from cartridge...")
 
-        for i in range(1, 100*1000): # Read first 100 sectors (50KB)
-            zip_data += self.read_sd_block(i)
+        zip_data = self.read_sd_data(2, xz_length-1)
 
         tmp_game_path = f"/tmp/Games/{game_name}/"
 
