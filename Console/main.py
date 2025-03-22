@@ -5,7 +5,8 @@ import logging
 from Controllers.controller import Controller
 from Controllers.controller_manager import ControllerManager
 from cartridge_loader import CartridgeLoader
-from time import sleep
+from time import sleep, time
+from threading import Thread
 
 logging.basicConfig()
 logging.root.setLevel(logging.DEBUG)
@@ -35,11 +36,15 @@ class Console:
         self.init_menu_interface()
         self.init_cartridges()
 
+        self.last_cartridge_update_check = 0
+        self.cartridge_check_thread = Thread(target=self.check_cartridge)
+        self.cartridge_check_thread.start()
+
         self.init = True
         logging.info("Console startup complete!")
 
         # TODO: THIS IS JUST FOR TESTING
-        self.load_cartidge()
+        #self.load_cartidge()
 
         self.main()
 
@@ -74,10 +79,44 @@ class Console:
     def init_cartridges(self) -> None:
         logging.info("Initializing cartridges...")
 
+        self.cartridge_loader = CartridgeLoader(self.on_title_launch)
         self.cartridge_loaded = False
 
     def load_cartidge(self) -> None:
-        CartridgeLoader(self.on_title_launch).load_cartridge()
+        self.cartridge_loader.load_cartridge()
+
+    def check_cartridge(self) -> None:
+        last_cartridge_loaded = self.cartridge_loaded
+
+        while self.cartridge_loader.init_failure:
+            logging.warning("Attempting to restart cartridge loadeder to reset SD loader (init failure)...")
+            self.cartridge_loader.__init__(self.on_title_launch)
+
+            if self.cartridge_loader.init_failure:
+                logging.error("Failed to re-init cartridge loader! Waiting 1 second before retrying...")
+                sleep(1)
+
+        while 1:
+            if time() - self.last_cartridge_update_check > 2:
+                self.last_cartridge_update_check = time()
+                cartridge_loaded = self.cartridge_loader.is_sd_card_connected()
+
+                if cartridge_loaded is not None: self.cartridge_loaded = cartridge_loaded
+
+            else:
+                sleep(time() - self.last_cartridge_update_check)
+
+            if not self.cartridge_loaded:
+                self.on_cartridge_remove()
+                self.init_cartridges()
+                self.check_cartridge()
+                return
+
+            elif not last_cartridge_loaded:
+                self.cartridge_loaded = True
+
+    def on_cartridge_remove(self) -> None:
+        logging.warning(f"Cartridge no longer reading / writing (disconnected)!")
 
     def main(self) -> None:
         while not self.cartridge_loaded:
@@ -111,8 +150,17 @@ class Console:
 
             pg.display.flip()
 
-    def update(self) -> None:
+        self.load_cartidge()
+        self.main() # Reset when the game stops (cartridge unloaded)
+
+    def update(self) -> bool:
+        """Returns: should_quit"""
+
         self.controller_manager.update()
+        
+        if self.cartridge_loaded == False: return True
+
+        return False
 
     def on_title_launch(self, ConsoleEntry: object) -> None:
         while not self.init:
@@ -121,6 +169,8 @@ class Console:
         self.cartridge_loaded = True
 
         ConsoleEntry(self.screen, self.update, self.controller_manager.get_num_players, self.controller_manager.controllers)
+
+        self.main()
 
 if __name__ == "__main__":
     # Where it all begins...

@@ -64,12 +64,14 @@ class Event:
         self.events.append(ActualEvent(event))
 
 class Controller:
-    def __init__(self, port: int, left_channel: MCP3008, right_channel: MCP3008) -> None:
+    def __init__(self, port: int, left_channel: MCP3008, right_channel: MCP3008, testing: bool = TESTING) -> None:
         self.port = port 
         self.plugged_in = False
         
         self.left_channel = left_channel
         self.right_channel = right_channel
+
+        self.testing = testing
 
         self.event = Event()
 
@@ -82,7 +84,7 @@ class Controller:
         return False
 
     def poll_events(self) -> None:
-        if TESTING: return
+        if self.testing: return
 
         d_up = self.split_channel_value(self.left_channel, 0.2)
         d_right = self.split_channel_value(self.left_channel, 0.4)

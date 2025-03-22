@@ -1,6 +1,5 @@
 import pygame as pg
 
-from Console.UI.pygame_gui import Button
 from Console.Controllers.controller import Controller, CONTROLS
 from Console.sound import generate_square_wave, generate_sine_wave
 
@@ -518,7 +517,8 @@ class MainMenu:
 
             self.check_game_start()
 
-            self.console_update()
+            game_quit = self.console_update()
+            if game_quit: return
 
             pg.display.flip()
 
@@ -548,6 +548,9 @@ class Snither:
         self.controllers = controllers
 
         self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers, infinite)
+
+        should_quit = self.console_update()
+        if should_quit: return
 
         self.num_screens = self.get_num_players()
 
@@ -819,6 +822,7 @@ class Snither:
                 self.draw_splitscreen_lines()
                 self.draw_minimap()
             
-            self.console_update()
+            should_quit = self.console_update()
+            if should_quit: return
 
             pg.display.flip()
