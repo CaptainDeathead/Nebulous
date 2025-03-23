@@ -329,11 +329,11 @@ class Shape:
 
         screen_rect = pg.Rect(draw_parent.x - screen.width // 2 + image.width // 2, draw_parent.y - screen.height // 2 + image.height // 2, screen.width, screen.height)
 
-        if not pg.Rect(self.x - image.width // 2, self.y - image.height // 2, image.width, image.height).colliderect(screen_rect): return
+        if not pg.Rect(self.x, self.y, image.width, image.height).colliderect(screen_rect): return
 
         screen.blit(image, (self.x - screen_rect.x, self.y - screen_rect.y))
 
-        if self.showing_powerup_popup:
+        if self.showing_powerup_popup and draw_parent is self:
             screen.blit(self.powerup_popup, (screen.width // 2 - self.powerup_popup.width // 2, screen.height // 2 - self.powerup_popup.height // 2))
 
 class Screen(pg.Surface):
@@ -374,6 +374,7 @@ class Safezone:
     NUM_POINTS = 100
     DISTANCE_TO_MOVE_REDUCTION = 1000
     TARGET_RADIUS_ALLOWANCE = 1.05
+    SCALING = 80
 
     def __init__(self, map_size_x: int, map_size_y: int, phase_config: Dict[int, Dict]) -> None:
         self.map_size_x = map_size_x
@@ -385,8 +386,11 @@ class Safezone:
 
         self.color = pg.Color(255, 0, 0)
 
+        self.scaled_width = map_size_x // self.SCALING
+        self.scaled_height = map_size_y // self.SCALING
+
         self.polygon = self.generate_circle_polygon(self.start_radius, (self.map_size_x / 2, self.map_size_y / 2), self.NUM_POINTS)
-        self.surface = pg.Surface((1_000, 1_000))
+        self.surface = pg.Surface((self.scaled_width, self.scaled_height))
         
         self.next_phase()
 
@@ -413,7 +417,7 @@ class Safezone:
 
         self.target = self.phase_config[self.phase_index]["target"]
         self.target_radius = self.phase_config[self.phase_index]["radius"]
-        self.zone_speed = 0.01
+        self.zone_speed = 0.001
         self.distances_to_move = self.calculate_distances()
 
     def calculate_distances(self) -> List[float]:
@@ -454,11 +458,24 @@ class Safezone:
         pg.draw.polygon(self.surface, (0, 0, 0), screen_verts)
         #pg.image.save(self.surface, 'e.png')
 
-    def blit(self, screen: pg.Surface, draw_parent: Player) -> None:
-        screen.blit(self.surface, (0, 0), (draw_parent.x//100, draw_parent.y//100, screen.width//100, screen.height//100))
+    def blit(self, screen: pg.Surface, draw_parent: Shape) -> None:
+        x = max(min((draw_parent.x - screen.width / 2) / 100, self.surface.width), 0)
+        y = max(min((draw_parent.y - screen.height / 2) / 100, self.surface.height), 0)
+        #width = max(min(x + screen.width / 100, self.surface.height), 0)
+        #height = max(min(y + screen.height / 100, self.surface.height), 0)
+        width = screen.width / self.SCALING * 1.5
+        height = screen.height / self.SCALING * 1.5
+
+        #print(x, y, width, height)
+
+        crop_area = pg.Rect(x, y, width, height)
+        cropped_surf = pg.transform.scale_by(self.surface.subsurface(crop_area), self.SCALING)
+
+        screen.fill((255, 255, 255))
+        screen.blit(cropped_surf, (0, 0))
 
 class MainMenu:
-    TIMER_LENGTH = 6
+    TIMER_LENGTH = 1
 
     def __init__(self, display_surf: pg.Surface, console_update: object, controllers: List[Controller]) -> None:
         self.display_surf = display_surf
@@ -504,12 +521,12 @@ class MainMenu:
             self.shape_info = loads(f.read())
 
         self.players[0].controller.plugged_in = True
-        #self.players[1].controller.plugged_in = True
-        #self.players[1].ready = True
-        #self.players[2].controller.plugged_in = True
-        #self.players[2].ready = True
-        #self.players[3].controller.plugged_in = True
-        #self.players[3].ready = True
+        self.players[1].controller.plugged_in = True
+        self.players[1].ready = True
+        self.players[2].controller.plugged_in = True
+        self.players[2].ready = True
+        self.players[3].controller.plugged_in = True
+        self.players[3].ready = True
 
         self.main()
 
@@ -646,7 +663,7 @@ class ShapeRoyale:
     NUM_PHASES = 4
     NUM_PLAYERS = 100
     NUM_POWERUPS = 2400 # this must be divisible by the NUM_POWERUP_SECTIONS below
-    NUM_POWERUP_SECTIONS = 6
+    NUM_POWERUP_SECTIONS = 12
     POWERUP_SECTION_SIZE = int(NUM_POWERUPS / NUM_POWERUP_SECTIONS)
 
     MAX_BULLET_TRAVEL_DIST = 2000
@@ -738,7 +755,7 @@ class ShapeRoyale:
 
         radius = (self.MAP_SIZE * sqrt(2)) // 2
         target = (self.MAP_SIZE_X / 2, self.MAP_SIZE_Y / 2)
-        time = 60*3
+        time = 60/10
 
         time_reduction = time // num_phases
 
@@ -767,7 +784,7 @@ class ShapeRoyale:
         for i, player in enumerate(self.main_menu.players):
             name = self.shape_names[player.shape_index]
             new_shape = Shape(
-                randint(0, self.MAP_SIZE_X), randint(0, self.MAP_SIZE_Y), choice(self.shape_names), self.shape_info, self.shape_images[f"{name}Friendly"],
+                randint(0, self.MAP_SIZE_X*0), randint(0, self.MAP_SIZE_Y*0), choice(self.shape_names), self.shape_info, self.shape_images[f"{name}Friendly"],
                 self.shape_images[f"{name}Enemy"], self.bullets, self.bullet_img, True, self.controllers[i], []
             )
             new_shape.squad.append(new_shape)
@@ -824,7 +841,7 @@ class ShapeRoyale:
                 last_safezone_draw = time()
 
             for s, screen in enumerate(self.screens):
-                screen.fill((255, 0, 0))
+                screen.fill((0, 0, 0))
                 self.safezone.blit(screen, self.players[s])
 
             keys = pg.key.get_pressed()

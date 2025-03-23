@@ -23,7 +23,7 @@ from math import ceil
 from random import randint
 
 # TODO: THIS IS ONLY FOR TESTING WITHOUT SD_CARDS IN THE PI
-TESTING = False
+#TESTING = False
 
 class CartridgeLoader:
     SD_BLOCK_SIZE = 512
@@ -157,10 +157,8 @@ class CartridgeLoader:
         return bytes_str.replace(b'\x00', b'')
 
     def flash_game(self) -> None:
-        #game_name = input("Enter game name with no spaces or wierd characters: ")
-        #game_path = input("Enter path to .tar.xz of game: ")
-        game_name = "Snither"
-        game_path = "snither.tar.xz"
+        game_name = input("Enter game name with no spaces or wierd characters: ")
+        game_path = input("Enter path to .tar.xz of game: ")
 
         with open(game_path, "rb") as f:
             xz = f.read()
@@ -169,13 +167,13 @@ class CartridgeLoader:
         self.write_sd_block(1, ceil(len(xz)/512).to_bytes(512))
         self.write_sd_data(3, xz)
 
-        print("Flashed")
+        logging.info(f"Successfully flashed {game_name} to cartridge!")
 
     def load_cartridge(self) -> None:
         if TESTING:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-            from Games.Snither.consolemain import ConsoleEntry
+            #from Games.Snither.consolemain import ConsoleEntry
             #from Games.Racer.consolemain import ConsoleEntry
             from Games.ShapeRoyale.consolemain import ConsoleEntry
             
@@ -193,9 +191,6 @@ class CartridgeLoader:
 
         zip_data = self.read_sd_data(3, xz_length+3)
 
-        print(f"{zip_data=}")
-
-        print(game_name)
         tmp_game_path = f"/tmp/Games/{game_name}"
 
         if os.path.exists('/tmp/Games'):

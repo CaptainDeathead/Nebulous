@@ -17,6 +17,7 @@ FONTS_PATH = "./UI/Fonts"
 class Console:
     NUM_CONTROLLER_PORTS = 4
     TARGET_FPS = 60
+    TESTING = True
 
     def __init__(self) -> None:
         """
@@ -44,7 +45,7 @@ class Console:
         logging.info("Console startup complete!")
 
         # TODO: THIS IS JUST FOR TESTING
-        #self.load_cartidge()
+        self.load_cartidge()
 
         self.main()
 
@@ -86,6 +87,8 @@ class Console:
         self.cartridge_loader.load_cartridge()
 
     def check_cartridge(self) -> None:
+        if self.TESTING: return
+
         last_cartridge_loaded = self.cartridge_loaded
 
         while self.cartridge_loader.init_failure:
