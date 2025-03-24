@@ -463,8 +463,8 @@ class Safezone:
         y = max(min((draw_parent.y - screen.height / 2) / 100, self.surface.height), 0)
         #width = max(min(x + screen.width / 100, self.surface.height), 0)
         #height = max(min(y + screen.height / 100, self.surface.height), 0)
-        width = screen.width / self.SCALING * 1.5
-        height = screen.height / self.SCALING * 1.5
+        width = screen.width / self.SCALING * 1.5 - x_overlap
+        height = screen.height / self.SCALING * 1.5 - y_overlap
 
         #print(x, y, width, height)
 
@@ -521,12 +521,12 @@ class MainMenu:
             self.shape_info = loads(f.read())
 
         self.players[0].controller.plugged_in = True
-        self.players[1].controller.plugged_in = True
-        self.players[1].ready = True
-        self.players[2].controller.plugged_in = True
-        self.players[2].ready = True
-        self.players[3].controller.plugged_in = True
-        self.players[3].ready = True
+        #self.players[1].controller.plugged_in = True
+        #self.players[1].ready = True
+        #self.players[2].controller.plugged_in = True
+        #self.players[2].ready = True
+        #self.players[3].controller.plugged_in = True
+        #self.players[3].ready = True
 
         self.main()
 
