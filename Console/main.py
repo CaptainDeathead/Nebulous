@@ -7,6 +7,7 @@ from Controllers.controller_manager import ControllerManager
 from cartridge_loader import CartridgeLoader
 from time import sleep, time
 from threading import Thread
+from sys import argv
 
 logging.basicConfig()
 logging.root.setLevel(logging.DEBUG)
@@ -17,9 +18,9 @@ FONTS_PATH = "./UI/Fonts"
 class Console:
     NUM_CONTROLLER_PORTS = 4
     TARGET_FPS = 60
-    TESTING = True
+    TESTING = False
 
-    def __init__(self) -> None:
+    def __init__(self, testing: bool = False) -> None:
         """
         Steps to initialize console:
         1. Initialize controllers and controller polling
@@ -29,6 +30,7 @@ class Console:
         """
 
         self.init = False
+        self.TESTING = testing
 
         logging.info("Welcome from the console!!!")
 
@@ -52,7 +54,7 @@ class Console:
     def init_controllers(self) -> None:
         logging.info("Initializing controllers...")
 
-        self.controller_manager = ControllerManager()
+        self.controller_manager = ControllerManager(testing=self.TESTING)
 
     def init_display(self) -> None:
         logging.info("Initializing display...")
@@ -177,4 +179,12 @@ class Console:
 
 if __name__ == "__main__":
     # Where it all begins...
-    console = Console()
+    testing = False
+
+    if len(argv) > 1:
+        if argv[1] == "--test":
+            testing = True
+        else:
+            raise Exception(f"Argument {argv[1]} is not recognised! Use --test for console testing.")
+
+    console = Console(testing)

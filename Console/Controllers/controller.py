@@ -1,10 +1,17 @@
 import logging
 
 try:
-    from gpiozero import MCP3008
+    from gpiozero import MCP3008, Button
     TESTING = False
 except:
     def MCP3008(**args) -> None: ...
+
+    class Button:
+        def __init__(self, pin_index: int, pull_up: bool = True) -> None:
+            self.is_pressed = False
+            self.pin_index = pin_index
+            self.pull_up = pull_up
+
     TESTING = True
     logging.error("Failed to import gpiozero library for controller interfaceing! Assuming this is a non-console test so continuing...")
 
@@ -64,16 +71,29 @@ class Event:
         self.events.append(ActualEvent(event))
 
 class Controller:
-    def __init__(self, port: int, left_channel: MCP3008, right_channel: MCP3008, testing: bool = TESTING) -> None:
+    def __init__(self, port: int, left_channel: MCP3008, right_channel: MCP3008, status_pin: int, testing: bool = TESTING) -> None:
         self.port = port 
-        self.plugged_in = False
         
         self.left_channel = left_channel
         self.right_channel = right_channel
 
+        self.status_btn = Button(status_pin, pull_up=False)
+        self.status_btn.when_pressed = self.on_plug
+        self.status_btn.when_released = self.on_unplug
+
+        self.plugged_in = self.status_btn.is_pressed
+
         self.testing = testing
 
         self.event = Event()
+
+    def on_plug(self) -> None:
+        logging.info(f"Controller : {self.port} plugged in!")
+        self.plugged_in = True
+
+    def on_unplug(self) -> None:
+        logging.info(f"Controller : {self.port} unplugged!")
+        self.plugged_in = False
 
     def split_channel_value(self, channel: MCP3008, value: float, tolerance: float = 0.05) -> bool:
         ch_value = channel.value
@@ -84,7 +104,7 @@ class Controller:
         return False
 
     def poll_events(self) -> None:
-        if self.testing: return
+        if (not self.plugged_in) or self.testing: return
 
         d_up = self.split_channel_value(self.left_channel, 0.2)
         d_right = self.split_channel_value(self.left_channel, 0.4)
@@ -109,6 +129,3 @@ class Controller:
         if x: self.event.register(CONTROLS.ABXY.X)
         if y: self.event.register(CONTROLS.ABXY.Y)
         if start: self.event.register(CONTROLS.START)
-
-    def check_plugged_status(self) -> None:
-        ...

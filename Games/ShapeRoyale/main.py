@@ -805,7 +805,7 @@ class ShapeRoyale:
         self.players = self.generate_players()
         self.powerups = self.generate_powerups()
 
-        self.players[0].max_speed = 100
+        #self.players[0].max_speed = 100
 
         self.powerup_sections = [(i*self.POWERUP_SECTION_SIZE, (i+1)*self.POWERUP_SECTION_SIZE) for i in range(self.NUM_POWERUP_SECTIONS)]
         self.powerup_section_index = 0
