@@ -1,25 +1,25 @@
 {
     "Common": {
         "spawn_chance": 0.44,
-        "color": "(0, 255, 0)",
+        "color": "(0, 200, 0)",
         "types": {
             "Health Pack": {
                 "blurb": "Some would say there's no such thing as a free lunch... well here it is!",
-                "description": "Increases max player health by 20%",
+                "description": "Increases max player health by 10%",
                 "effect": "player.maxhp.percentage_increase",
-                "value": 1.2
+                "value": 1.1
             },
             "Tank": {
                 "blurb": "Sticks and stones may NOT break my bones!",
-                "description": "Increases max player shield by 20%",
+                "description": "Increases max player shield by 10%",
                 "effect": "player.shield.percentage_increase",
-                "value": 1.2
+                "value": 1.1
             },
             "Speed": {
                 "blurb": "I'm no tortoise!",
-                "description": "Increases max player speed by 20%",
+                "description": "Increases max player speed by 10%",
                 "effect": "player.speed.percentage_increase",
-                "value": 1.2
+                "value": 1.1
             },
             "Self-healing Membrane": {
                 "blurb": "You may slice me down, but you'll be doing it for a long time...",
@@ -41,15 +41,15 @@
             },
             "Machine Gun": {
                 "blurb": "BRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR!",
-                "description": "Increases rate of fire by 20%",
+                "description": "Increases rate of fire by 10%",
                 "effect": "player.firerate.percentage_increase",
-                "value": 1.2
+                "value": 1.1
             },
             "Particle Accelerator": {
                 "blurb": "'Did ya see that?' 'Nah wha'?' 'Must've been the wind...'",
-                "description": "Increases bullet speed by 20%",
+                "description": "Increases bullet speed by 10%",
                 "effect": "player.bulletspeed.percentage_increase",
-                "value": 1.2
+                "value": 1.1
             },
             "Kitchen Knife": {
                 "blurb": "Not much more to say about Mum's favorite kitchen knife souring through the air at 463.78km/h.",
@@ -61,7 +61,7 @@
     },
     "Rare": {
         "spawn_chance": 0.2,
-        "color": "(255, 0, 255)",
+        "color": "(150, 0, 255)",
         "types": {
             "Blood Donor": {
                 "blurb": "Gimme all your blood :)",
@@ -71,21 +71,21 @@
             },
             "Shotgun": {
                 "blurb": "Boy, you best get off my land before I make you!",
-                "description": "Increases rate of fire by 60%",
+                "description": "Increases rate of fire by 30%",
                 "effect": "player.firerate.percentage_increase",
-                "value": 1.6
+                "value": 1.3
             },
             "Toxic Waste": {
                 "blurb": "Time to dispose of the chemicals!",
-                "description": "Poison's other players for +3 damage per second for 10 seconds",
+                "description": "Poison's other players for +2 damage per second for 5 seconds",
                 "effect": "player.poisondamage.increase",
-                "value": 3
+                "value": 2
             },
             "Gas Mask": {
                 "blurb": "Would this darn mask ever like stop fogging up?",
-                "description": "Increases zone resistance by 30%",
+                "description": "Increases zone resistance by 20%",
                 "effect": "player.zoneresistance.percentage_increase",
-                "value": 1.3
+                "value": 1.2
             }
         }
     },
@@ -101,9 +101,9 @@
             },
             "Plasma Gun": {
                 "blurb": "An electric shock is quite the nip!",
-                "description": "Increases bullet damage by 40% every 100 pixels",
+                "description": "Increases bullet damage by 100% every 100 pixels",
                 "effect": "player.damagegrowth.percentage_increase",
-                "value": 1.4
+                "value": 2.0
             }
         }
     }
