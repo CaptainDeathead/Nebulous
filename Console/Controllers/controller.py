@@ -89,8 +89,6 @@ class Controller:
 
         self.last_plugged_in = False
 
-        self.plugged_in = self.status_btn.is_pressed
-
         self.testing = testing
 
         self.event = Event()
