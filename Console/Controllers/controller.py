@@ -112,8 +112,6 @@ class Controller:
 
         self.plugged_in = GPIO.input(self.status_pin)
 
-        print(self.plugged_in)
-
         if self.plugged_in != self.last_plugged_in:
             if self.plugged_in: self.on_plug()
             else: self.on_unplug()

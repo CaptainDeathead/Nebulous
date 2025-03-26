@@ -40,6 +40,9 @@ class VController:
             else:
                 pg.draw.circle(self.surface, (0, 0, 255), button_pos, radius=20)
 
+        if not self.controller.plugged_in:
+            self.surface.set_alpha(64)
+
         return self.surface
 
 class Caliby:
