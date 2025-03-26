@@ -42,6 +42,8 @@ class VController:
 
         if not self.controller.plugged_in:
             self.surface.set_alpha(64)
+        else:
+            self.surface.set_alpha(255)
 
         return self.surface
 

@@ -88,6 +88,7 @@ class Controller:
         GPIO.setup(self.status_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
         self.last_plugged_in = False
+        self.plugged_in = False
 
         self.testing = testing
 
