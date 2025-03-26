@@ -47,7 +47,7 @@ class Console:
         logging.info("Console startup complete!")
 
         # TODO: THIS IS JUST FOR TESTING
-        self.load_cartidge()
+        if self.TESTING or 1: self.load_cartidge()
 
         self.main()
 
@@ -89,7 +89,7 @@ class Console:
         self.cartridge_loader.load_cartridge()
 
     def check_cartridge(self) -> None:
-        if self.TESTING: return
+        if self.TESTING or 1: return
 
         last_cartridge_loaded = self.cartridge_loaded
 
@@ -119,6 +119,8 @@ class Console:
 
             elif not last_cartridge_loaded:
                 self.cartridge_loaded = True
+
+            if self.cartridge_loaded: return
 
     def on_cartridge_remove(self) -> None:
         logging.warning(f"Cartridge no longer reading / writing (disconnected)!")

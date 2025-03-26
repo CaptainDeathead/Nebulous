@@ -170,17 +170,18 @@ class CartridgeLoader:
         logging.info(f"Successfully flashed {game_name} to cartridge!")
 
     def load_cartridge(self) -> None:
-        if TESTING:
+        if TESTING or 1:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
             #from Games.Snither.consolemain import ConsoleEntry
             #from Games.Racer.consolemain import ConsoleEntry
-            from Games.ShapeRoyale.consolemain import ConsoleEntry
+            #from Games.ShapeRoyale.consolemain import ConsoleEntry
+            from Games.Caliby.consolemain import ConsoleEntry
             
             self.on_title_launch(ConsoleEntry)
             return
 
-        self.flash_game()
+        #self.flash_game()
 
         zip_data = b""
 
@@ -193,14 +194,13 @@ class CartridgeLoader:
 
         tmp_game_path = f"/tmp/Games/{game_name}"
 
-        if os.path.exists('/tmp/Games'):
+        if not os.path.exists('tmp/Games'):
             logging.debug("Cartridge already has an entry in /tmp! Removing it...")
             rmtree('/tmp/Games', ignore_errors=True)
+        
+        os.makedirs(tmp_game_path)
 
-        os.mkdir('/tmp/Games')
-        os.mkdir(f'/tmp/Games/{game_name}')
-
-        with open(f'/tmp/Games/{game_name}/e.tar.xz', 'wb') as f:
+        with open(f'{tmp_game_path}/e.tar.xz', 'wb') as f:
             f.write(zip_data)
 
         xz_buffer = BytesIO(zip_data)

@@ -60,7 +60,7 @@ class Event:
         # Returns the events in the contoller and clears them
         for event in self.events:
             yield event
-            self.events.remove(event)
+            #self.events.remove(event)
 
     def register(self, event: int) -> None:
         for event_class in self.events:
@@ -69,6 +69,9 @@ class Event:
         logging.debug(f"Controller recieved {CONTROLS.get_control_str(event)}.")
 
         self.events.append(ActualEvent(event))
+
+    def flush(self) -> None:
+        self.events = []
 
 class Controller:
     def __init__(self, port: int, left_channel: MCP3008, right_channel: MCP3008, status_pin: int, testing: bool = TESTING) -> None:
@@ -95,9 +98,7 @@ class Controller:
         logging.info(f"Controller : {self.port} unplugged!")
         self.plugged_in = False
 
-    def split_channel_value(self, channel: MCP3008, value: float, tolerance: float = 0.05) -> bool:
-        ch_value = channel.value
-
+    def split_channel_value(self, ch_value: float, value: float, tolerance: float = 0.05) -> bool:
         if value > ch_value - tolerance and value < ch_value + tolerance:
             return True
 
@@ -106,17 +107,22 @@ class Controller:
     def poll_events(self) -> None:
         if (not self.plugged_in) or self.testing: return
 
-        d_up = self.split_channel_value(self.left_channel, 0.2)
-        d_right = self.split_channel_value(self.left_channel, 0.4)
-        d_down = self.split_channel_value(self.left_channel, 0.6)
-        d_left = self.split_channel_value(self.left_channel, 0.8)
-        select = self.split_channel_value(self.left_channel, 1.0)
+        left_ch_value = self.left_channel.value
+        right_ch_value = self.right_channel.value
 
-        a = self.split_channel_value(self.right_channel, 0.2)
-        b = self.split_channel_value(self.right_channel, 0.4)
-        x = self.split_channel_value(self.right_channel, 0.6)
-        y = self.split_channel_value(self.right_channel, 0.8)
-        start = self.split_channel_value(self.right_channel, 1.0)
+        d_up = self.split_channel_value(left_ch_value, 0.2)
+        d_left = self.split_channel_value(left_ch_value, 0.4)
+        d_down = self.split_channel_value(left_ch_value, 0.6)
+        d_right = self.split_channel_value(left_ch_value, 0.93, tolerance = 0.02)
+        select = self.split_channel_value(left_ch_value, 1.0, tolerance = 0.02)
+
+        y = self.split_channel_value(right_ch_value, 0.2)
+        b = self.split_channel_value(right_ch_value, 0.4)
+        a = self.split_channel_value(right_ch_value, 0.6)
+        x = self.split_channel_value(right_ch_value, 0.94, tolerance = 0.02)
+        start = self.split_channel_value(right_ch_value, 1.0, tolerance= 0.02)
+
+        self.event.flush()
 
         if d_up: self.event.register(CONTROLS.DPAD.UP)
         if d_right: self.event.register(CONTROLS.DPAD.RIGHT)
