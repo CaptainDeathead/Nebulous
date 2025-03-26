@@ -7,6 +7,8 @@ try:
     Device.pin_factory = PiGPIOFactory()
 
     from gpiozero import MCP3008
+
+    import RPi.GPIO as GPIO
 except:
     def MCP3008(**args) -> None: ...
     logging.error("Failed to import gpiozero library for controller interfaceing! Assuming this is a non-console test so continuing...")
@@ -29,6 +31,8 @@ class ControllerManager:
         self.TESTING = testing
 
         try:
+            GPIO.setmode(GPIO.BCM)
+
             self.controllers = [
                 Controller(i, MCP3008(channel=i*2, select_pin=8), MCP3008(channel=i*2+1, select_pin=8), self.CONTROLLER_STATUS_PINS[i], testing=self.TESTING)
                 for i in range(self.NUM_CONTROLLER_PORTS)

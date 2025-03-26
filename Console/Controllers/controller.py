@@ -1,16 +1,20 @@
 import logging
 
 try:
-    from gpiozero import MCP3008, Button
+    from gpiozero import MCP3008
+    import RPi.GPIO as GPIO
     TESTING = False
 except:
     def MCP3008(**args) -> None: ...
 
-    class Button:
-        def __init__(self, pin_index: int, pull_up: bool = True) -> None:
-            self.is_pressed = False
-            self.pin_index = pin_index
-            self.pull_up = pull_up
+    class GPIO:
+        @staticmethod
+        def setup(a, b) -> None:
+            return None
+    
+        @staticmethod
+        def input(a) -> bool:
+            return False
 
     TESTING = True
     logging.error("Failed to import gpiozero library for controller interfaceing! Assuming this is a non-console test so continuing...")
@@ -80,9 +84,10 @@ class Controller:
         self.left_channel = left_channel
         self.right_channel = right_channel
 
-        self.status_btn = Button(status_pin, pull_up=False)
-        self.status_btn.when_pressed = self.on_plug
-        self.status_btn.when_released = self.on_unplug
+        self.status_pin = status_pin
+        GPIO.setup(self.status_pin, GPIO.IN)
+
+        self.last_plugged_in = False
 
         self.plugged_in = self.status_btn.is_pressed
 
@@ -105,7 +110,17 @@ class Controller:
         return False
 
     def poll_events(self) -> None:
-        if (not self.plugged_in) or self.testing: return
+        if self.testing: return
+
+        self.plugged_in = GPIO.input(self.status_pin)
+
+        if self.plugged_in != self.last_plugged_in:
+            if self.plugged_in: self.on_plug()
+            else: self.on_unplug()
+
+            self.last_plugged_in = self.plugged_in
+
+        if not self.plugged_in: return
 
         left_ch_value = self.left_channel.value
         right_ch_value = self.right_channel.value
