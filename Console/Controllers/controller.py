@@ -9,7 +9,7 @@ except:
 
     class GPIO:
         @staticmethod
-        def setup(a, b) -> None:
+        def setup(a, b, pull_up_down=0) -> None:
             return None
     
         @staticmethod
@@ -85,7 +85,7 @@ class Controller:
         self.right_channel = right_channel
 
         self.status_pin = status_pin
-        GPIO.setup(self.status_pin, GPIO.IN)
+        GPIO.setup(self.status_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
         self.last_plugged_in = False
 
