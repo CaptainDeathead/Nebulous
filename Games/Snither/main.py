@@ -748,6 +748,9 @@ class Snither:
                             self.show_game_over(None, False)
                             return
 
+            should_quit = self.console_update()
+            if should_quit: return
+
             for c, controller in enumerate(self.controllers):
                 for event in controller.event.get():
                     if event.type == CONTROLS.DPAD.UP:
@@ -824,7 +827,7 @@ class Snither:
                 self.draw_splitscreen_lines()
                 self.draw_minimap()
             
-            should_quit = self.console_update()
-            if should_quit: return
+            #should_quit = self.console_update()
+            #if should_quit: return
 
             pg.display.flip()

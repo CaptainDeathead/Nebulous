@@ -170,7 +170,7 @@ class CartridgeLoader:
         logging.info(f"Successfully flashed {game_name} to cartridge!")
 
     def load_cartridge(self) -> None:
-        if TESTING or 1:
+        if TESTING:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
             #from Games.Snither.consolemain import ConsoleEntry
@@ -181,7 +181,7 @@ class CartridgeLoader:
             self.on_title_launch(ConsoleEntry)
             return
 
-        #self.flash_game()
+        self.flash_game()
 
         zip_data = b""
 

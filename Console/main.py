@@ -89,7 +89,7 @@ class Console:
         self.cartridge_loader.load_cartridge()
 
     def check_cartridge(self) -> None:
-        if self.TESTING or 1: return
+        if self.TESTING: return
 
         last_cartridge_loaded = self.cartridge_loaded
 
