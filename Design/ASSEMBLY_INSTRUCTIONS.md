@@ -12,6 +12,8 @@
 - 8x 22kΩ resistors
 - 8x 49500Ω resistors
 - 8x 132kΩ resistors
+- 4x 4 pin socket (any type)
+- 4x 4 pin plug (matching socket)
 - 4x Generic led
 - 4x Resistor matching generic led
 - 1x Nebulous Base 3d Printed
@@ -24,5 +26,14 @@
 
 ## Method:
 > [!NOTE]
-> See the bottom of the page for information on breadboarding the controller if not using a pcb.
-1. For each Nebulous Controller PCB, 
+> If not using a pcb for the controller, ignore step 1 and see the bottom of the page for alternative instructions on breadboarding.
+1. For each Nebulous Controller PCB, soldier in all the buttons and resistors into their labeled positions, as well as the generic led. Soldier the ends of the positive, ground, data 1, and data 2 wires to the pcb in their respective positions.
+2. Screw each Nebulous Controller PCB into a Controller Shell Bottom. Thread the wires connected to the pcb through the outgoing hole in the controller shell top. 
+3. Place the ABCD, D-Pad, Select and Start buttons into the controller shell top, and carefully place the controller bottom onto the top, and pull the wires through the hole. Repeat for each controller.
+4. Screw the Controller Shell pieces together using the screw holes on the corners. Soldier the wires from each controller to a 4 pin connector. The controllers are now complete.
+5. to be continuted
+
+
+
+> [!CAUTION]
+> Scary
