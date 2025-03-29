@@ -355,7 +355,7 @@ class Meteors:
 
         cont_lbl = self.main_menu.fonts["large"].render("Press A to play again...", True, (255, 255, 255))
         cont_lbl.blit(self.main_menu.fonts["large"].render("      A", True, (0, 255, 0)))
-        men_lbl = self.main_menu.fonts["large"].render("Press B to DIE!!!", True, (255, 255, 255))
+        men_lbl = self.main_menu.fonts["large"].render("Press B to edit settings.", True, (255, 255, 255))
         men_lbl.blit(self.main_menu.fonts["large"].render("      B", True, (255, 0, 0)))
 
         acc_dt = 0
