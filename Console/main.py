@@ -181,7 +181,7 @@ class Console:
 
 if __name__ == "__main__":
     # Where it all begins...
-    testing = False
+    testing = True
 
     if len(argv) > 1:
         if argv[1] == "--test":

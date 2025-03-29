@@ -75,12 +75,20 @@ class Ship:
         match self.direction:
             case 1:
                 self.tripoints = [(5*self.scale+self.x,5*self.scale+self.y), (1+self.x, 5*self.scale+self.y), (3*self.scale+self.x, 1+self.y)]
+                if 5*self.scale+self.y < 0:
+                    self.y = 1080
             case 2:
                 self.tripoints = [(5*self.scale+self.x,1+self.y), (1+self.x, 1+self.y), (3*self.scale+self.x, 5*self.scale+self.y)]
+                if 1+self.y > 1080:
+                    self.y = 0
             case 3:
                 self.tripoints = [(5*self.scale+self.x, 1+self.y), (5*self.scale+self.x, 5*self.scale+self.y), (1+self.x, 3*self.scale+self.y)]
+                if 5*self.scale+self.x < 0:
+                    self.x = 1920
             case 4:
                 self.tripoints = [(1+self.x, 1+self.y), (1+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)]
+                if 1+self.x > 1920:
+                    self.x = 0
             case _:
                 n = 1
                 while True:
@@ -109,16 +117,28 @@ class Rock:
         self.dy = sin(radians(self.heading)) * self.speed
     
     def move(self, surface, bound_x, bound_y):
-        self.x += self.dx
-        self.y += self.dy
+        #self.x += self.dx
+        #self.y += self.dy
+        #
+        #if self.x - self.radius <= 0 or self.x + self.radius >= bound_x:
+        #    self.dx = -self.dx
+        #    self.heading = (180 - self.heading) % 360
+        #
+        #if self.y - self.radius <= 0 or self.y + self.radius >= bound_y:
+        #    self.dy = -self.dy
+        #    self.heading = (360 - self.heading) % 360
 
-        if self.x - self.radius <= 0 or self.x + self.radius >= bound_x:
-            self.dx = -self.dx
-            self.heading = (180 - self.heading) % 360
-            
-        if self.y - self.radius <= 0 or self.y + self.radius >= bound_y:
-            self.dy = -self.dy
-            self.heading = (360 - self.heading) % 360
+        if self.x-self.radius > bound_x:
+            self.x = 0
+        elif self.x+self.radius < 0:
+            self.x = bound_x
+        if self.y-self.radius > bound_y:
+            self.y = 0
+        elif self.y+self.radius < 0:
+            self.y = bound_y
+        
+        self.y += self.dy
+        self.x += self.dx
 
         pg.draw.circle(surface, (255, 255, 255), (self.x, self.y), self.radius, 30)
 
@@ -333,8 +353,10 @@ class Meteors:
 
             curr_y += spacing
 
-        cont_lbl = self.main_menu.fonts["large"].render("Press A to continue...", True, (255, 255, 255))
+        cont_lbl = self.main_menu.fonts["large"].render("Press A to play again...", True, (255, 255, 255))
         cont_lbl.blit(self.main_menu.fonts["large"].render("      A", True, (0, 255, 0)))
+        men_lbl = self.main_menu.fonts["large"].render("Press B to DIE!!!", True, (255, 255, 255))
+        men_lbl.blit(self.main_menu.fonts["large"].render("      B", True, (255, 0, 0)))
 
         acc_dt = 0
 
@@ -360,6 +382,7 @@ class Meteors:
 
             if acc_dt >= 5:
                 self.display_surf.blit(cont_lbl, (self.WIDTH // 2 - cont_lbl.width // 2, curr_y + 40))
+                self.display_surf.blit(men_lbl, (self.WIDTH // 2 - men_lbl.width // 2, curr_y + 100))
 
                 for controller in self.controllers:
                     for event in controller.event.get():
@@ -416,10 +439,10 @@ class Meteors:
                 for i2, bullet in enumerate(self.bullets):
                     if ((bullet.x > rock.x - rock.radius) and (bullet.x < rock.x + rock.radius)) and ((bullet.y > rock.y - rock.radius) and (bullet.y < rock.y + rock.radius)):
                         if rock.big == True:
-                            self.asteroids.append(Rock(38, rock.x, rock.y, rock.speed, rock.heading, False))
-                            self.asteroids.append(Rock(38, rock.x, rock.y, rock.speed, 360-rock.heading, False))
+                            self.asteroids.append(Rock(38, rock.x, rock.y, rock.speed, rock.heading+randint(-35, 35), False))
+                            self.asteroids.append(Rock(38, rock.x, rock.y, rock.speed, (360-rock.heading)+randint(-35, 35), False))
                         else:
-                            self.num_asteroids -= 1
+                            self.num_asteroids -= 0.5
                         self.asteroids.pop(i)
                         self.bullets.pop(i2)
                         self.ships[0].score += 1
