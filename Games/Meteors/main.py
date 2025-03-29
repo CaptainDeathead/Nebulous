@@ -96,12 +96,12 @@ class Ship:
 
 
 class Rock:
-    def __init__(self, radius, x, y, speed, va:float):
+    def __init__(self, radius, x, y, speed, va:float, big=True):
         self.radius = radius
         self.x = x
         self.y = y
 
-        self.big = True
+        self.big = big
         self.speed = speed
         self.heading: float = va
 
@@ -386,7 +386,7 @@ class Meteors:
             #spawn "meteors"
             if self.num_asteroids < self.difficulty:
                 self.num_asteroids += 1
-                self.asteroids.append(Rock(75, 500, 500, 10, randint(1, 358)))
+                self.asteroids.append(Rock(76, 500, 500, 10, randint(1, 358)))
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
@@ -416,11 +416,11 @@ class Meteors:
                 for i2, bullet in enumerate(self.bullets):
                     if ((bullet.x > rock.x - rock.radius) and (bullet.x < rock.x + rock.radius)) and ((bullet.y > rock.y - rock.radius) and (bullet.y < rock.y + rock.radius)):
                         if rock.big == True:
-                            rock.big = False
-                            rock.radius = rock.radius // 2
+                            self.asteroids.append(Rock(38, rock.x, rock.y, rock.speed, rock.heading, False))
+                            self.asteroids.append(Rock(38, rock.x, rock.y, rock.speed, 360-rock.heading, False))
                         else:
-                            self.asteroids.pop(i)
-                        self.num_asteroids -= 0.5
+                            self.num_asteroids -= 1
+                        self.asteroids.pop(i)
                         self.bullets.pop(i2)
                         self.ships[0].score += 1
 
