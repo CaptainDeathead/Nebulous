@@ -81,6 +81,7 @@ class Ship:
 
         self.lives = 4
         self.dead = False
+        self.apressed = False
 
     def draw(self, surface) -> None:
         match self.direction:
@@ -323,6 +324,7 @@ class Meteors:
         self.console_update = console_update
         self.get_num_players = get_num_players
         self.controllers = controllers
+        print(self.controllers)
         self.get_num_players = get_num_players
 
         self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers)
@@ -331,6 +333,7 @@ class Meteors:
 
         self.screens = [Screen(pg.Rect(0, 0, self.WIDTH, self.HEIGHT), pg.SRCALPHA)]
         self.clock = pg.time.Clock()
+        self.A_Pressed = False
 
         self.ships = [Ship((randint(0, 69), randint(0, 69)), (255, 0, 0)) for _ in range(self.NUM_SHIPS)]
         self.bullets = []
@@ -443,8 +446,10 @@ class Meteors:
 
             should_quit = self.console_update()
             if should_quit: return
-
+            
             for c, controller in enumerate(self.controllers):
+                stilla = False
+                print(c)
                 for event in controller.event.get():
                     if event.type == CONTROLS.DPAD.UP:
                         self.ships[c].move_up()
@@ -454,6 +459,17 @@ class Meteors:
                         self.ships[c].move_down()
                     elif event.type == CONTROLS.DPAD.LEFT:
                         self.ships[c].move_left()
+                    
+                    if event.type == CONTROLS.ABXY.A:
+                        if self.ships[c].apressed == False:
+                            self.ships[c].apressed == True
+                            self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction))
+                        stilla = True
+
+                if controller.plugged_in and not stilla:
+                    self.ships[c].apressed = False
+
+            
 
             #doing the thing with the thing 
             #collisoas
