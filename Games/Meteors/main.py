@@ -1,15 +1,26 @@
 #code "borrowed" from /Games/Snither/main.py
 #remember to probably add multiple lives
 import pygame as pg
-
 from Console.UI.pygame_gui import Button
+
 from Console.Controllers.controller import Controller, CONTROLS
+from Console.sound import generate_square_wave, generate_sine_wave
 
 from time import time
 from random import randint
 from math import cos, sin, radians
 
 from typing import Sequence, List, Tuple, Dict
+
+startup_txt = """
+ M     M  EEEEE  TTTTT  EEEEE  OOO   RRRR    SSS  
+ MM   MM  E        T    E     O   O  R   R  S      
+ M M M M  EEEE     T    EEEE  O   O  RRRR   SSS    
+ M  M  M  E        T    E     O   O  R  R      S   
+ M     M  EEEEE    T    EEEEE  OOO   R   R  SSS  
+"""
+
+print(startup_txt)
 
 pg.init()
 
@@ -304,12 +315,15 @@ class Meteors:
     DIFFICULTY_CAP = 25
 
     def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller]) -> None:
+        self.console_update = console_update
+        should_quit = self.console_update()
+        if should_quit: return
+    
         self.display_surf = display_surf
         self.console_update = console_update
         self.get_num_players = get_num_players
         self.controllers = controllers
         self.get_num_players = get_num_players
-        self.num_screens =  self.get_num_players()
 
         self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers)
         self.difficulty = self.INITIAL_DIFFICULTY
@@ -353,18 +367,12 @@ class Meteors:
 
             curr_y += spacing
 
-        cont_lbl = self.main_menu.fonts["large"].render("Press A to play again...", True, (255, 255, 255))
-        cont_lbl.blit(self.main_menu.fonts["large"].render("      A", True, (0, 255, 0)))
+        cont_lbl = self.main_menu.fonts["large"].render("Press START to play again...", True, (255, 255, 255))
+        cont_lbl.blit(self.main_menu.fonts["large"].render("      START", True, (255, 0, 255)))
         men_lbl = self.main_menu.fonts["large"].render("Press B to edit settings.", True, (255, 255, 255))
-        men_lbl.blit(self.main_menu.fonts["large"].render("      B", True, (255, 0, 0)))
-
-        acc_dt = 0
-
-        start_time = time()
+        men_lbl.blit(self.main_menu.fonts["large"].render("      B", True, (255, 255, 0)))
 
         def reset_game() -> None:
-            # > what
-            #if time() - start_time < 5: return
             self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers)
 
         while 1:
@@ -375,20 +383,21 @@ class Meteors:
                     if event.key == pg.K_SPACE:
                         reset_game()
                         return
-            acc_dt += self.clock.tick(60)
 
             for event in pg.event.get():
                 pass
 
-            if acc_dt >= 5:
-                self.display_surf.blit(cont_lbl, (self.WIDTH // 2 - cont_lbl.width // 2, curr_y + 40))
-                self.display_surf.blit(men_lbl, (self.WIDTH // 2 - men_lbl.width // 2, curr_y + 100))
+            self.display_surf.blit(cont_lbl, (self.WIDTH // 2 - cont_lbl.width // 2, curr_y + 40))
+            self.display_surf.blit(men_lbl, (self.WIDTH // 2 - men_lbl.width // 2, curr_y + 100))
 
-                for controller in self.controllers:
-                    for event in controller.event.get():
-                        if event.type == CONTROLS.ABXY.A:
-                            self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers)
-                            return
+            for controller in self.controllers:
+                for event in controller.event.get():
+                    if event.type == CONTROLS.START:
+                        reset_game()
+                        return
+                    if event.type== CONTROLS.ABXY.B:
+                        reset_game()
+                        return
 
             self.console_update()
 
@@ -422,7 +431,7 @@ class Meteors:
                     elif event.key == pg.K_y:
                         self.ships[0].dead = True
             
-            keys = pg.key.get_pressed()  # Get the state of all keys
+            keys = pg.key.get_pressed()
             if keys[pg.K_UP]:
                 self.ships[0].move_up()
             elif keys[pg.K_RIGHT]:
@@ -432,6 +441,19 @@ class Meteors:
             elif keys[pg.K_LEFT]:
                 self.ships[0].move_left()
 
+            should_quit = self.console_update()
+            if should_quit: return
+
+            for c, controller in enumerate(self.controllers):
+                for event in controller.event.get():
+                    if event.type == CONTROLS.DPAD.UP:
+                        self.ships[c].move_up()
+                    elif event.type == CONTROLS.DPAD.RIGHT:
+                        self.ships[c].move_right()
+                    elif event.type == CONTROLS.DPAD.DOWN:
+                        self.ships[c].move_down()
+                    elif event.type == CONTROLS.DPAD.LEFT:
+                        self.ships[c].move_left()
 
             #doing the thing with the thing 
             #collisoas

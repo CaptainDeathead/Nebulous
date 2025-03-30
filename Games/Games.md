@@ -1,4 +1,4 @@
-# Game information for [INSERT CONSOLE NAME HERE]
+# Game information for Nebulous
 
 ## Format
 1. Games must be made in any way that involves a single graphical window that must run on a raspberry pi with no DE (Desktop Environment).
