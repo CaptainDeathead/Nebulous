@@ -176,13 +176,13 @@ class CartridgeLoader:
             #from Games.Snither.consolemain import ConsoleEntry
             #from Games.Racer.consolemain import ConsoleEntry
             #from Games.ShapeRoyale.consolemain import ConsoleEntry
-            from Games.Meteors.consolemain import ConsoleEntry
-            #from Games.Caliby.consolemain import ConsoleEntry
+            #from Games.Meteors.consolemain import ConsoleEntry
+            from Games.Caliby.consolemain import ConsoleEntry
             
             self.on_title_launch(ConsoleEntry)
             return
 
-        self.flash_game()
+        #self.flash_game()
 
         zip_data = b""
 
