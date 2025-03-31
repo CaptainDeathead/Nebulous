@@ -1,15 +1,26 @@
 #code "borrowed" from /Games/Snither/main.py
 #remember to probably add multiple lives
 import pygame as pg
-
 from Console.UI.pygame_gui import Button
+
 from Console.Controllers.controller import Controller, CONTROLS
+from Console.sound import generate_square_wave, generate_sine_wave
 
 from time import time
 from random import randint
 from math import cos, sin, radians
 
 from typing import Sequence, List, Tuple, Dict
+
+startup_txt = """
+ M     M  EEEEE  TTTTT  EEEEE  OOO   RRRR    SSS  
+ MM   MM  E        T    E     O   O  R   R  S      
+ M M M M  EEEE     T    EEEE  O   O  RRRR   SSS    
+ M  M  M  E        T    E     O   O  R  R      S   
+ M     M  EEEEE    T    EEEEE  OOO   R   R  SSS  
+"""
+
+print(startup_txt)
 
 pg.init()
 
@@ -70,17 +81,26 @@ class Ship:
 
         self.lives = 4
         self.dead = False
+        self.apressed = False
 
     def draw(self, surface) -> None:
         match self.direction:
             case 1:
                 self.tripoints = [(5*self.scale+self.x,5*self.scale+self.y), (1+self.x, 5*self.scale+self.y), (3*self.scale+self.x, 1+self.y)]
+                if 5*self.scale+self.y < 0:
+                    self.y = 1080
             case 2:
                 self.tripoints = [(5*self.scale+self.x,1+self.y), (1+self.x, 1+self.y), (3*self.scale+self.x, 5*self.scale+self.y)]
+                if 1+self.y > 1080:
+                    self.y = 0
             case 3:
                 self.tripoints = [(5*self.scale+self.x, 1+self.y), (5*self.scale+self.x, 5*self.scale+self.y), (1+self.x, 3*self.scale+self.y)]
+                if 5*self.scale+self.x < 0:
+                    self.x = 1920
             case 4:
                 self.tripoints = [(1+self.x, 1+self.y), (1+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)]
+                if 1+self.x > 1920:
+                    self.x = 0
             case _:
                 n = 1
                 while True:
@@ -96,12 +116,12 @@ class Ship:
 
 
 class Rock:
-    def __init__(self, radius, x, y, speed, va:float):
+    def __init__(self, radius, x, y, speed, va:float, big=True):
         self.radius = radius
         self.x = x
         self.y = y
 
-        self.big = True
+        self.big = big
         self.speed = speed
         self.heading: float = va
 
@@ -109,16 +129,28 @@ class Rock:
         self.dy = sin(radians(self.heading)) * self.speed
     
     def move(self, surface, bound_x, bound_y):
-        self.x += self.dx
-        self.y += self.dy
+        #self.x += self.dx
+        #self.y += self.dy
+        #
+        #if self.x - self.radius <= 0 or self.x + self.radius >= bound_x:
+        #    self.dx = -self.dx
+        #    self.heading = (180 - self.heading) % 360
+        #
+        #if self.y - self.radius <= 0 or self.y + self.radius >= bound_y:
+        #    self.dy = -self.dy
+        #    self.heading = (360 - self.heading) % 360
 
-        if self.x - self.radius <= 0 or self.x + self.radius >= bound_x:
-            self.dx = -self.dx
-            self.heading = (180 - self.heading) % 360
-            
-        if self.y - self.radius <= 0 or self.y + self.radius >= bound_y:
-            self.dy = -self.dy
-            self.heading = (360 - self.heading) % 360
+        if self.x-self.radius > bound_x:
+            self.x = 0
+        elif self.x+self.radius < 0:
+            self.x = bound_x
+        if self.y-self.radius > bound_y:
+            self.y = 0
+        elif self.y+self.radius < 0:
+            self.y = bound_y
+        
+        self.y += self.dy
+        self.x += self.dx
 
         pg.draw.circle(surface, (255, 255, 255), (self.x, self.y), self.radius, 30)
 
@@ -284,12 +316,16 @@ class Meteors:
     DIFFICULTY_CAP = 25
 
     def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller]) -> None:
+        self.console_update = console_update
+        should_quit = self.console_update()
+        if should_quit: return
+    
         self.display_surf = display_surf
         self.console_update = console_update
         self.get_num_players = get_num_players
         self.controllers = controllers
+        print(self.controllers)
         self.get_num_players = get_num_players
-        self.num_screens =  self.get_num_players()
 
         self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers)
         self.difficulty = self.INITIAL_DIFFICULTY
@@ -297,6 +333,7 @@ class Meteors:
 
         self.screens = [Screen(pg.Rect(0, 0, self.WIDTH, self.HEIGHT), pg.SRCALPHA)]
         self.clock = pg.time.Clock()
+        self.A_Pressed = False
 
         self.ships = [Ship((randint(0, 69), randint(0, 69)), (255, 0, 0)) for _ in range(self.NUM_SHIPS)]
         self.bullets = []
@@ -333,16 +370,12 @@ class Meteors:
 
             curr_y += spacing
 
-        cont_lbl = self.main_menu.fonts["large"].render("Press A to continue...", True, (255, 255, 255))
-        cont_lbl.blit(self.main_menu.fonts["large"].render("      A", True, (0, 255, 0)))
-
-        acc_dt = 0
-
-        start_time = time()
+        cont_lbl = self.main_menu.fonts["large"].render("Press START to play again...", True, (255, 255, 255))
+        cont_lbl.blit(self.main_menu.fonts["large"].render("      START", True, (255, 0, 255)))
+        men_lbl = self.main_menu.fonts["large"].render("Press B to edit settings.", True, (255, 255, 255))
+        men_lbl.blit(self.main_menu.fonts["large"].render("      B", True, (255, 255, 0)))
 
         def reset_game() -> None:
-            # > what
-            #if time() - start_time < 5: return
             self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers)
 
         while 1:
@@ -353,19 +386,21 @@ class Meteors:
                     if event.key == pg.K_SPACE:
                         reset_game()
                         return
-            acc_dt += self.clock.tick(60)
 
             for event in pg.event.get():
                 pass
 
-            if acc_dt >= 5:
-                self.display_surf.blit(cont_lbl, (self.WIDTH // 2 - cont_lbl.width // 2, curr_y + 40))
+            self.display_surf.blit(cont_lbl, (self.WIDTH // 2 - cont_lbl.width // 2, curr_y + 40))
+            self.display_surf.blit(men_lbl, (self.WIDTH // 2 - men_lbl.width // 2, curr_y + 100))
 
-                for controller in self.controllers:
-                    for event in controller.event.get():
-                        if event.type == CONTROLS.ABXY.A:
-                            self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers)
-                            return
+            for controller in self.controllers:
+                for event in controller.event.get():
+                    if event.type == CONTROLS.START:
+                        reset_game()
+                        return
+                    if event.type== CONTROLS.ABXY.B:
+                        reset_game()
+                        return
 
             self.console_update()
 
@@ -386,7 +421,7 @@ class Meteors:
             #spawn "meteors"
             if self.num_asteroids < self.difficulty:
                 self.num_asteroids += 1
-                self.asteroids.append(Rock(75, 500, 500, 10, randint(1, 358)))
+                self.asteroids.append(Rock(76, 500, 500, 10, randint(1, 358)))
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
@@ -399,7 +434,7 @@ class Meteors:
                     elif event.key == pg.K_y:
                         self.ships[0].dead = True
             
-            keys = pg.key.get_pressed()  # Get the state of all keys
+            keys = pg.key.get_pressed()
             if keys[pg.K_UP]:
                 self.ships[0].move_up()
             elif keys[pg.K_RIGHT]:
@@ -409,6 +444,32 @@ class Meteors:
             elif keys[pg.K_LEFT]:
                 self.ships[0].move_left()
 
+            should_quit = self.console_update()
+            if should_quit: return
+            
+            for c, controller in enumerate(self.controllers):
+                stilla = False
+                print(c)
+                for event in controller.event.get():
+                    if event.type == CONTROLS.DPAD.UP:
+                        self.ships[c].move_up()
+                    elif event.type == CONTROLS.DPAD.RIGHT:
+                        self.ships[c].move_right()
+                    elif event.type == CONTROLS.DPAD.DOWN:
+                        self.ships[c].move_down()
+                    elif event.type == CONTROLS.DPAD.LEFT:
+                        self.ships[c].move_left()
+                    
+                    if event.type == CONTROLS.ABXY.A:
+                        if self.ships[c].apressed == False:
+                            self.ships[c].apressed == True
+                            self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction))
+                        stilla = True
+
+                if controller.plugged_in and not stilla:
+                    self.ships[c].apressed = False
+
+            
 
             #doing the thing with the thing 
             #collisoas
@@ -416,11 +477,11 @@ class Meteors:
                 for i2, bullet in enumerate(self.bullets):
                     if ((bullet.x > rock.x - rock.radius) and (bullet.x < rock.x + rock.radius)) and ((bullet.y > rock.y - rock.radius) and (bullet.y < rock.y + rock.radius)):
                         if rock.big == True:
-                            rock.big = False
-                            rock.radius = rock.radius // 2
+                            self.asteroids.append(Rock(38, rock.x, rock.y, rock.speed, rock.heading+randint(-35, 35), False))
+                            self.asteroids.append(Rock(38, rock.x, rock.y, rock.speed, (360-rock.heading)+randint(-35, 35), False))
                         else:
-                            self.asteroids.pop(i)
-                        self.num_asteroids -= 0.5
+                            self.num_asteroids -= 0.5
+                        self.asteroids.pop(i)
                         self.bullets.pop(i2)
                         self.ships[0].score += 1
 

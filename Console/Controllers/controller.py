@@ -85,7 +85,8 @@ class Controller:
         self.right_channel = right_channel
 
         self.status_pin = status_pin
-        GPIO.setup(self.status_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        if not testing:
+            GPIO.setup(self.status_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
         self.last_plugged_in = False
         self.plugged_in = False
