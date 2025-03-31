@@ -26,6 +26,8 @@ pg.init()
 
 FONTS_PATH = "./UI/Fonts"
 
+SHIP_COLOURS = {0: (255, 0, 0), 1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 255, 0)}
+
 class DIRECTION:
     UP    = 1
     RIGHT = 4
@@ -106,8 +108,8 @@ class Ship:
                 while True:
                     print("LinusTechTrips"*n)
                     n += 1
-
-        pg.draw.polygon(surface, self.color, self.tripoints)
+        if not self.dead:
+            pg.draw.polygon(surface, self.color, self.tripoints)
 
     def move_up(self) -> None: self.direction = 1; self.y -= self.speed; self.nozzle = (3*self.scale+self.x, 1+self.y)
     def move_right(self) -> None: self.direction = 4; self.x += self.speed; self.nozzle = (5*self.scale+self.x, 3*self.scale+self.y)
@@ -308,7 +310,7 @@ class Meteors:
     PYGAME_INFO: any = pg.display.Info()
     WIDTH: int = PYGAME_INFO.current_w
     HEIGHT: int = PYGAME_INFO.current_h
-    NUM_SHIPS = 1
+    NUM_SHIPS = 4
     PLAYING_FIELD_SIZE = -1
     STEP_INTERVAL = 0.15
     INITIAL_DIFFICULTY = 1
@@ -326,19 +328,17 @@ class Meteors:
         self.console_update = console_update
         self.get_num_players = get_num_players
         self.controllers = controllers
-
-        self.get_num_players = get_num_players
-        
+      
         self.rock_speed = 10
         self.fpscap = 60
         self.player_speed = 8
         self.bullet_speed = 18
 
         if self.TRASH_MODE:
-            self.rock_speed = 50
-            self.fpscap = 6
-            self.player_speed = 40
-            self.bullet_speed = 90
+            self.rock_speed = 36
+            self.fpscap = 8
+            self.player_speed = 30
+            self.bullet_speed = 67
 
 
         self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers)
@@ -349,7 +349,7 @@ class Meteors:
         self.clock = pg.time.Clock()
         self.A_Pressed = False
 
-        self.ships = [Ship((randint(0, 69), randint(0, 69)), (255, 0, 0), self.player_speed) for _ in range(self.NUM_SHIPS)]
+        self.ships = [Ship((randint(0, 69), randint(0, 69)), SHIP_COLOURS[i], self.player_speed) for i in range(self.NUM_SHIPS)]
         self.bullets = []
         self.asteroids = []
 
@@ -445,6 +445,9 @@ class Meteors:
                     if event.key == pg.K_a:
                         #shoot bullet
                         self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed))
+                    elif event.key == pg.K_n:
+                        #shoot bullet
+                        self.bullets.append(Bullet(self.ships[1].nozzle, self.ships[1].color, self.ships[1].direction, self.bullet_speed))
                     elif event.key == pg.K_y:
                         self.ships[0].dead = True
             
@@ -457,6 +460,15 @@ class Meteors:
                 self.ships[0].move_down()
             elif keys[pg.K_LEFT]:
                 self.ships[0].move_left()
+
+            if keys[pg.K_u]:
+                self.ships[1].move_up()
+            elif keys[pg.K_k]:
+                self.ships[1].move_right()
+            elif keys[pg.K_j]:
+                self.ships[1].move_down()
+            elif keys[pg.K_h]:
+                self.ships[1].move_left()
 
             should_quit = self.console_update()
             if should_quit: return
@@ -476,13 +488,13 @@ class Meteors:
                     if event.type == CONTROLS.ABXY.A:
                         if self.ships[c].apressed == False:
                             self.ships[c].apressed == True
-                            self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction))
+                            self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed))
                         stilla = True
 
                 if controller.plugged_in and not stilla:
                     self.ships[c].apressed = False
 
-            
+
 
             #doing the thing with the thing 
             #collisoas
