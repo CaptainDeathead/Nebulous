@@ -38,12 +38,13 @@ class DIRECTION:
     def RANDOM(self) -> int: return randint(1, 4)
 
 class Bullet:
-    def __init__(self, location: Tuple[int, int], color: pg.Color, direction: int, speed: int):
+    def __init__(self, location: Tuple[int, int], color: pg.Color, direction: int, speed: int, player: int):
         self.x = location[0]
         self.y = location[1]
         self.color = color
         self.speed = speed
         self.direction = direction
+        self.player = player
 
         if direction > 2:
             self.height = 4
@@ -226,8 +227,10 @@ class MainMenu:
         self.timer_start_lbl = self.fonts["medium"].render("Game starting in  ...", True, (255, 255, 255))
         self.timer_end_lbls = [self.fonts["medium"].render(f"                 {i}", True, (0, 0, 255)) for i in range(self.timer_time, -1, -1)]
 
-        self.players[0].ready = True
         self.players[0].controller.plugged_in = True
+        self.players[1].controller.plugged_in = True
+        self.players[0].ready = True
+        self.players[1].ready = True
 
         self.main()
 
@@ -280,14 +283,16 @@ class MainMenu:
             self.display_surf.fill((0, 0, 0))
             self.clock.tick(60)
 
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    pass
-
             for i, controller in enumerate(self.controllers):
                 for event in controller.event.get():
                     if event.type == CONTROLS.ABXY.A:
                         self.players[i].ready = not self.players[i].ready
+            
+            for event in pg.event.get():    
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_SPACE:
+                        self.players[0].ready = not self.players[0].ready
+                        self.players[1].ready = not self.players[1].ready
 
             self.draw_player_buttons()
 
@@ -310,14 +315,15 @@ class Meteors:
     PYGAME_INFO: any = pg.display.Info()
     WIDTH: int = PYGAME_INFO.current_w
     HEIGHT: int = PYGAME_INFO.current_h
-    NUM_SHIPS = 4
+    NUM_SHIPS = 2
     PLAYING_FIELD_SIZE = -1
     STEP_INTERVAL = 0.15
     INITIAL_DIFFICULTY = 1
     DIFFICULTY_GAP = 6
     DIFFICULTY_CAP = 25
-
+    
     TRASH_MODE = True
+    SET_FPS = 20
 
     def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller]) -> None:
         self.console_update = console_update
@@ -335,10 +341,10 @@ class Meteors:
         self.bullet_speed = 18
 
         if self.TRASH_MODE:
-            self.rock_speed = 36
-            self.fpscap = 8
-            self.player_speed = 30
-            self.bullet_speed = 67
+            self.fpscap = self.SET_FPS
+            self.rock_speed = ((10*60)/self.fpscap)/2
+            self.player_speed = ((8*60)/self.fpscap)/2
+            self.bullet_speed = ((18*60)/self.fpscap)/2
 
 
         self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers)
@@ -366,8 +372,8 @@ class Meteors:
         go_lbl = self.main_menu.fonts["large"].render("Game Over!", True, (255, 255, 255))
         self.display_surf.blit(go_lbl, (self.WIDTH // 2 - go_lbl.width // 2, 100))
 
-        winner_lbl = self.main_menu.fonts["medium"].render(f"Player {alive_snake_index + 1} survived the longest!", True, (255, 255, 255))
-        winner_lbl.blit(self.main_menu.fonts["medium"].render(f" " * len(f"Player {alive_snake_index + 1} survived the ") + "longest", True, (255, 150, 0)), (0, 0))
+        winner_lbl = self.main_menu.fonts["medium"].render(f"Player {alive_snake_index + 1} scored the most!", True, (255, 255, 255))
+        winner_lbl.blit(self.main_menu.fonts["medium"].render(f" " * len(f"Player {alive_snake_index + 1} ") + "scored", True, (255, 150, 0)), (0, 0))
 
         self.display_surf.blit(winner_lbl, (self.WIDTH // 2 - winner_lbl.width // 2, 100 + go_lbl.height + 50))
 
@@ -422,6 +428,7 @@ class Meteors:
         while 1:
             
             self.clock.tick(self.fpscap)
+            #print(self.clock.get_fps())
 
             for screen in self.screens:
                 screen.fill((0, 0, 0))
@@ -444,10 +451,10 @@ class Meteors:
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_a:
                         #shoot bullet
-                        self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed))
+                        self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed, 0))
                     elif event.key == pg.K_n:
                         #shoot bullet
-                        self.bullets.append(Bullet(self.ships[1].nozzle, self.ships[1].color, self.ships[1].direction, self.bullet_speed))
+                        self.bullets.append(Bullet(self.ships[1].nozzle, self.ships[1].color, self.ships[1].direction, self.bullet_speed, 1))
                     elif event.key == pg.K_y:
                         self.ships[0].dead = True
             
@@ -488,7 +495,7 @@ class Meteors:
                     if event.type == CONTROLS.ABXY.A:
                         if self.ships[c].apressed == False:
                             self.ships[c].apressed == True
-                            self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed))
+                            self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed, c))
                         stilla = True
 
                 if controller.plugged_in and not stilla:
@@ -507,8 +514,8 @@ class Meteors:
                         else:
                             self.num_asteroids -= 0.5
                         self.asteroids.pop(i)
+                        self.ships[bullet.player].score += 1
                         self.bullets.pop(i2)
-                        self.ships[0].score += 1
 
             #drawaing and moving
             for ship in self.ships:
