@@ -64,7 +64,7 @@ class Event:
         # Returns the events in the contoller and clears them
         for event in self.events:
             yield event
-            #self.events.remove(event)
+            self.events.remove(event)
 
     def register(self, event: int) -> None:
         for event_class in self.events:
@@ -85,8 +85,11 @@ class Controller:
         self.right_channel = right_channel
 
         self.status_pin = status_pin
+
         if not testing:
             GPIO.setup(self.status_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        else:
+            logging.warning("Testing arg recieved so skipping controller pin init!")
 
         self.last_plugged_in = False
         self.plugged_in = False
@@ -136,8 +139,6 @@ class Controller:
         a = self.split_channel_value(right_ch_value, 0.6)
         x = self.split_channel_value(right_ch_value, 0.94, tolerance = 0.02)
         start = self.split_channel_value(right_ch_value, 1.0, tolerance= 0.02)
-
-        self.event.flush()
 
         if d_up: self.event.register(CONTROLS.DPAD.UP)
         if d_right: self.event.register(CONTROLS.DPAD.RIGHT)

@@ -39,6 +39,10 @@ class Console:
         self.init_menu_interface()
         self.init_cartridges()
 
+        self.update_controllers = False
+        self.controller_check_thread = Thread(target=self.check_controllers)
+        self.controller_check_thread.start()
+
         self.last_cartridge_update_check = 0
         self.cartridge_check_thread = Thread(target=self.check_cartridge)
         self.cartridge_check_thread.start()
@@ -47,7 +51,7 @@ class Console:
         logging.info("Console startup complete!")
 
         # TODO: THIS IS JUST FOR TESTING
-        if self.TESTING or 1: self.load_cartidge()
+        if self.TESTING: self.load_cartidge()
 
         self.main()
 
@@ -87,6 +91,15 @@ class Console:
 
     def load_cartidge(self) -> None:
         self.cartridge_loader.load_cartridge()
+
+    def check_controllers(self) -> None:
+        while 1:
+            if not self.update_controllers:
+                sleep(0.01)
+                continue
+
+            self.controller_manager.update()
+            sleep(0.01)
 
     def check_cartridge(self) -> None:
         if self.TESTING: return
@@ -174,6 +187,7 @@ class Console:
             sleep(0.1)
 
         self.cartridge_loaded = True
+        self.update_controllers = True
 
         ConsoleEntry(self.screen, self.update, self.controller_manager.get_num_players, self.controller_manager.controllers)
 
@@ -181,7 +195,7 @@ class Console:
 
 if __name__ == "__main__":
     # Where it all begins...
-    testing = True
+    testing = False # DO NOT CHANGE THIS VALUE, HAMISH MATTHEW BRIGGS!!!! USE --test WHEN RUNNING LE SCRIPT FOR TESTING
 
     if len(argv) > 1:
         if argv[1] == "--test":
