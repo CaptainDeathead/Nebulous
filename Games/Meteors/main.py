@@ -36,11 +36,11 @@ class DIRECTION:
     def RANDOM(self) -> int: return randint(1, 4)
 
 class Bullet:
-    def __init__(self, location: Tuple[int, int], color: pg.Color, direction: int):
+    def __init__(self, location: Tuple[int, int], color: pg.Color, direction: int, speed: int):
         self.x = location[0]
         self.y = location[1]
         self.color = color
-        self.speed = 18
+        self.speed = speed
         self.direction = direction
 
         if direction > 2:
@@ -65,13 +65,13 @@ class Bullet:
 class Ship:
     PART_SIZE = 50
 
-    def __init__(self, location: Tuple[int, int], color: pg.Color) -> None:
+    def __init__(self, location: Tuple[int, int], color: pg.Color, speed: int) -> None:
         self.x = location[0]
         self.y = location[1]
         self.nozzle = (location[0], location[1])
 
         self.direction = 4
-        self.speed = 8
+        self.speed = speed
         self.scale = 10
         
         self.tripoints = [(5*self.scale+self.x,5*self.scale+self.y), (1+self.x, 5*self.scale+self.y), (3*self.scale+self.x, 1+self.y)]
@@ -315,6 +315,8 @@ class Meteors:
     DIFFICULTY_GAP = 6
     DIFFICULTY_CAP = 25
 
+    TRASH_MODE = True
+
     def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller]) -> None:
         self.console_update = console_update
         should_quit = self.console_update()
@@ -324,8 +326,20 @@ class Meteors:
         self.console_update = console_update
         self.get_num_players = get_num_players
         self.controllers = controllers
-        print(self.controllers)
+
         self.get_num_players = get_num_players
+        
+        self.rock_speed = 10
+        self.fpscap = 60
+        self.player_speed = 8
+        self.bullet_speed = 18
+
+        if self.TRASH_MODE:
+            self.rock_speed = 50
+            self.fpscap = 6
+            self.player_speed = 40
+            self.bullet_speed = 90
+
 
         self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers)
         self.difficulty = self.INITIAL_DIFFICULTY
@@ -335,7 +349,7 @@ class Meteors:
         self.clock = pg.time.Clock()
         self.A_Pressed = False
 
-        self.ships = [Ship((randint(0, 69), randint(0, 69)), (255, 0, 0)) for _ in range(self.NUM_SHIPS)]
+        self.ships = [Ship((randint(0, 69), randint(0, 69)), (255, 0, 0), self.player_speed) for _ in range(self.NUM_SHIPS)]
         self.bullets = []
         self.asteroids = []
 
@@ -379,8 +393,6 @@ class Meteors:
             self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers)
 
         while 1:
-            self.clock.tick(60)
-
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_SPACE:
@@ -408,7 +420,9 @@ class Meteors:
 
     def main(self) -> None:
         while 1:
-            self.clock.tick(60)
+            
+            self.clock.tick(self.fpscap)
+
             for screen in self.screens:
                 screen.fill((0, 0, 0))
 
@@ -421,7 +435,7 @@ class Meteors:
             #spawn "meteors"
             if self.num_asteroids < self.difficulty:
                 self.num_asteroids += 1
-                self.asteroids.append(Rock(76, 500, 500, 10, randint(1, 358)))
+                self.asteroids.append(Rock(76, 500, 500, self.rock_speed, randint(1, 358)))
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
@@ -430,7 +444,7 @@ class Meteors:
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_a:
                         #shoot bullet
-                        self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction))
+                        self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed))
                     elif event.key == pg.K_y:
                         self.ships[0].dead = True
             
@@ -449,7 +463,6 @@ class Meteors:
             
             for c, controller in enumerate(self.controllers):
                 stilla = False
-                print(c)
                 for event in controller.event.get():
                     if event.type == CONTROLS.DPAD.UP:
                         self.ships[c].move_up()
