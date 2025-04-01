@@ -71,7 +71,7 @@ class Console:
         self.cartridge_loader.unload_cartridge()
 
         logging.info("Executing 'Nebulous:/Console$ sudo shutdown now'...")
-        #os.system("sudo shutdown now")
+        os.system("sudo shutdown now")
         exit(0)
 
     def init_io(self) -> None:

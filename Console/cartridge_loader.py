@@ -181,7 +181,7 @@ class CartridgeLoader:
             logging.critical(f"Critical error while unloading cartridge via SPI! Error: {e}!")
 
     def load_cartridge(self) -> None:
-        if TESTING or 1:
+        if TESTING:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
             #from Games.Snither.consolemain import ConsoleEntry

@@ -66,9 +66,9 @@ class IOManager:
         self.final_console_shutdown()
 
     def update(self) -> None:
-        front_switch_on = not GPIO.input(self.CONSOLE_FRONT_POWER_PIN)
+        front_switch_off = GPIO.input(self.CONSOLE_FRONT_POWER_PIN)
 
-        if front_switch_on:
+        if front_switch_off:
             logging.info("Console IO detected front switch off! Console powering off now :)")        
             self.shutdown_console()
 
