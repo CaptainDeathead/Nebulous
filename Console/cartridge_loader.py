@@ -169,8 +169,19 @@ class CartridgeLoader:
 
         logging.info(f"Successfully flashed {game_name} to cartridge!")
 
+    def unload_cartridge(self) -> None:
+        logging.debug("Unloading cartridge...")
+
+        try:
+            if self.init_failure:
+                logging.warning("No cartridge attatched, so no cartridge to unload!")
+            else:
+                self.spi.deinit()
+        except Exception as e:
+            logging.critical(f"Critical error while unloading cartridge via SPI! Error: {e}!")
+
     def load_cartridge(self) -> None:
-        if TESTING:
+        if TESTING or 1:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
             #from Games.Snither.consolemain import ConsoleEntry

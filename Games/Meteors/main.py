@@ -317,7 +317,7 @@ class Meteors:
     DIFFICULTY_GAP = 6
     DIFFICULTY_CAP = 25
 
-    TRASH_MODE = True
+    TRASH_MODE = False
 
     def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller]) -> None:
         self.console_update = console_update
@@ -544,7 +544,8 @@ class Meteors:
             self.display_surf.blit(self.main_menu.fonts["large"].render(f"Level: {self.difficulty}", True, (0, 255, 0)))
             self.display_surf.blit(self.main_menu.fonts["large"].render(f"Score: {self.ships[0].score}", True, (250, 156, 28)), (900, 0))
 
-            self.console_update()
+            #self.console_update()
+            print(self.clock.get_fps())
 
             pg.display.flip()
 

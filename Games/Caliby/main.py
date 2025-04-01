@@ -83,6 +83,7 @@ class Caliby:
                     curr_x = 0
                     curr_y = 600
 
-            self.console_update()
+            should_quit = self.console_update()
+            if should_quit: return
 
             pg.display.flip()

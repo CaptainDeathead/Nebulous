@@ -1,10 +1,12 @@
 import pygame as pg
 import random
 import logging
+import os
 
 from Controllers.controller import Controller
 from Controllers.controller_manager import ControllerManager
 from cartridge_loader import CartridgeLoader
+from console_io import IOManager
 from time import sleep, time
 from threading import Thread
 from sys import argv
@@ -34,10 +36,13 @@ class Console:
 
         logging.info("Welcome from the console!!!")
 
+        self.init_io()
         self.init_controllers()
         self.init_display()
         self.init_menu_interface()
         self.init_cartridges()
+
+        self.kill_threads = False
 
         self.update_controllers = False
         self.controller_check_thread = Thread(target=self.check_controllers)
@@ -54,6 +59,25 @@ class Console:
         if self.TESTING: self.load_cartidge()
 
         self.main()
+
+    def final_console_shutdown(self) -> None:
+        logging.info("Recieved shutdown signal! Don't leave me!!!")
+
+        logging.debug("Waiting for threads to shutdown...")
+        self.kill_threads = True
+        self.cartridge_check_thread.join()
+        self.controller_check_thread.join()
+
+        self.cartridge_loader.unload_cartridge()
+
+        logging.info("Executing 'Nebulous:/Console$ sudo shutdown now'...")
+        #os.system("sudo shutdown now")
+        exit(0)
+
+    def init_io(self) -> None:
+        logging.info("Initializing console io manager...")
+
+        self.io_manager = IOManager(self.TESTING, self.final_console_shutdown)
 
     def init_controllers(self) -> None:
         logging.info("Initializing controllers...")
@@ -93,7 +117,7 @@ class Console:
         self.cartridge_loader.load_cartridge()
 
     def check_controllers(self) -> None:
-        while 1:
+        while not self.kill_threads:
             if not self.update_controllers:
                 sleep(0.01)
                 continue
@@ -107,6 +131,10 @@ class Console:
         last_cartridge_loaded = self.cartridge_loaded
 
         while self.cartridge_loader.init_failure:
+            if self.kill_threads: return
+
+            self.update_controllers = False
+
             logging.warning("Attempting to restart cartridge loadeder to reset SD loader (init failure)...")
             self.cartridge_loader.__init__(self.on_title_launch)
 
@@ -114,10 +142,13 @@ class Console:
                 logging.error("Failed to re-init cartridge loader! Waiting 1 second before retrying...")
                 sleep(1)
 
-        while 1:
+        while not self.kill_threads:
             if time() - self.last_cartridge_update_check > 2:
                 self.last_cartridge_update_check = time()
+
+                self.update_controllers = False
                 cartridge_loaded = self.cartridge_loader.is_sd_card_connected()
+                self.update_controllers = True
 
                 if cartridge_loaded is not None: self.cartridge_loaded = cartridge_loaded
 
@@ -133,7 +164,7 @@ class Console:
             elif not last_cartridge_loaded:
                 self.cartridge_loaded = True
 
-            if self.cartridge_loaded: return
+            #if self.cartridge_loaded: return
 
     def on_cartridge_remove(self) -> None:
         logging.warning(f"Cartridge no longer reading / writing (disconnected)!")
@@ -176,7 +207,9 @@ class Console:
     def update(self) -> bool:
         """Returns: should_quit"""
 
-        self.controller_manager.update()
+        self.io_manager.set_led_on()
+        self.io_manager.update()
+        #self.controller_manager.update()
         
         if self.cartridge_loaded == False: return True
 

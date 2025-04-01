@@ -87,6 +87,7 @@ class Controller:
         self.status_pin = status_pin
 
         if not testing:
+            GPIO.setmode(GPIO.BCM)
             GPIO.setup(self.status_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         else:
             logging.warning("Testing arg recieved so skipping controller pin init!")
