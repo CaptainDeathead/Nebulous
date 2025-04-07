@@ -168,17 +168,18 @@ class Console:
                 sleep(1)
 
         while not self.kill_threads:
-            if time() - self.last_cartridge_update_check > 2:
-                self.last_cartridge_update_check = time()
+            if self.CARTRIDGE_READ_CHECK:
+                if time() - self.last_cartridge_update_check > 2:
+                    self.last_cartridge_update_check = time()
 
-                self.update_controllers = False
-                cartridge_loaded = self.cartridge_loader.is_sd_card_connected()
-                self.update_controllers = True
+                    self.update_controllers = False
+                    cartridge_loaded = self.cartridge_loader.is_sd_card_connected()
+                    self.update_controllers = True
 
-                if cartridge_loaded is not None: self.cartridge_loaded = cartridge_loaded
+                    if cartridge_loaded is not None: self.cartridge_loaded = cartridge_loaded
 
-            else:
-                sleep(time() - self.last_cartridge_update_check)
+                else:
+                    sleep(time() - self.last_cartridge_update_check)
 
             if not self.cartridge_loaded:
                 self.on_cartridge_remove()
