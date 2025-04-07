@@ -167,10 +167,6 @@ class Console:
                 logging.error("Failed to re-init cartridge loader! Waiting 1 second before retrying...")
                 sleep(1)
 
-        if not self.CARTRIDGE_READ_CHECK:
-            logging.warning("Cartridge read checking disabled! Killing cartridge check thread...")
-            return
-
         while not self.kill_threads:
             if time() - self.last_cartridge_update_check > 2:
                 self.last_cartridge_update_check = time()
@@ -192,6 +188,10 @@ class Console:
 
             elif not last_cartridge_loaded:
                 self.cartridge_loaded = True
+
+                if not self.CARTRIDGE_READ_CHECK:
+                    logging.warning("Cartridge read checking disabled! Killing cartridge check thread...")
+                    return
 
             #if self.cartridge_loaded: return
 
