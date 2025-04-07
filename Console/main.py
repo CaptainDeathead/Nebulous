@@ -181,7 +181,7 @@ class Console:
                 else:
                     sleep(time() - self.last_cartridge_update_check)
 
-            if not self.cartridge_loaded:
+            if not self.cartridge_loaded and self.CARTRIDGE_READ_CHECK:
                 self.on_cartridge_remove()
                 self.init_cartridges()
                 self.check_cartridge()
