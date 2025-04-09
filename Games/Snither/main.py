@@ -534,7 +534,7 @@ class Snither:
         1: (0, 255, 0), # Green
         2: (0, 0, 255), # Blue
         3: (255, 255, 0), # Yellow
-        4: (0, 255, 255) # Purple
+        4: (0, 255, 255) # Cyan
     }
 
     NUM_SNAKES = 15

@@ -8,7 +8,7 @@ from json import loads
 from math import dist, sin, cos, atan2, pi, sqrt
 from ast import literal_eval
 from random import randint, choice, uniform
-from shapely import box, Polygon
+#from shapely import box, Polygon
 
 from typing import List, Sequence, Dict
 

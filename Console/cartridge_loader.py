@@ -169,6 +169,20 @@ class CartridgeLoader:
 
         logging.info(f"Successfully flashed {game_name} to cartridge!")
 
+    def unload_cartridge(self) -> None:
+        logging.debug("Unloading cartridge...")
+
+        try:
+            if self.init_failure:
+                logging.warning("No cartridge attatched, so no cartridge to unload!")
+            else:
+                self.spi.deinit()
+        except Exception as e:
+            logging.critical(f"Critical error while unloading cartridge via SPI! Error: {e}!")
+
+    def load_error(self, *args) -> None:
+        raise Exception("Cartridge load failure! Likely a syntax error.")
+
     def load_cartridge(self) -> None:
         if TESTING:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -177,10 +191,16 @@ class CartridgeLoader:
             #from Games.Racer.consolemain import ConsoleEntry
             #from Games.ShapeRoyale.consolemain import ConsoleEntry
             #from Games.Meteors.consolemain import ConsoleEntry
-            from Games.Caliby.consolemain import ConsoleEntry
+            #from Games.Caliby.consolemain import ConsoleEntry
+            #from Games.Blocky.consolemain import ConsoleEntry
+            try:
+                from Games.Pong.consolemain import ConsoleEntry
             
-            self.on_title_launch(ConsoleEntry)
-            return
+                self.on_title_launch(ConsoleEntry)
+                return
+            except Exception as e:
+                logging.error("Error while invoking cartridge! Likely a syntax error.")
+                self.on_title_launch(self.load_error)
 
         #self.flash_game()
 
