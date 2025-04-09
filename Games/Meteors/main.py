@@ -158,7 +158,27 @@ class Rock:
         pg.draw.circle(surface, (255, 255, 255), (self.x, self.y), self.radius, 30)
 
 class UFO:
-    ...
+    def __init__(self, x, y, speed):
+        self.speed = speed
+        self.scale = 15
+        self.x = x
+        self.y = y
+    
+    def ai(self, surface, bound_x, bound_y):
+        if self.x < 5:
+            self.x += self.speed
+        elif self.x > bound_x - -5:
+            self.x -= self.speed
+        elif self.y < 5:
+            self.y -= self.speed
+        elif self.y > bound_y -5:
+            self.y += self.speed
+        else:
+            ...
+        
+        pg.draw.polygon(surface, (250, 156, 28), [(3*self.scale+self.x, 1*self.scale+self.y), (1*self.scale+self.x, 3*self.scale+self.y), (3*self.scale+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)])
+
+        
 
 class Screen(pg.Surface):
     def __init__(self, rect: pg.Rect, flags: int = 0) -> None:
@@ -364,6 +384,9 @@ class Meteors:
             print(self.ships)
         self.bullets = []
         self.asteroids = []
+        self.UFOs = []
+
+        self.UFOactive = 2 #randint(3, 13)
 
         self.last_snake_move_time = time()
         self.last_difficulty_increase = time()
@@ -442,6 +465,8 @@ class Meteors:
             if time() - self.last_difficulty_increase >= self.DIFFICULTY_GAP:
                 if self.difficulty < self.DIFFICULTY_CAP:
                     self.difficulty += 1
+                    if self.difficulty == self.UFOactive:
+                        self.UFOs.append(UFO(-50, 500, self.player_speed))
                 self.last_difficulty_increase = time()
                 #print(self.difficulty)
 
@@ -536,6 +561,8 @@ class Meteors:
                 bullet.move(self.display_surf)
             for rock in self.asteroids:
                 rock.move(self.display_surf, 1920, 1080)
+            for ufo in self.UFOs:
+                ufo.ai(self.display_surf, 1920, 1080)
 
             if time() - self.last_snake_move_time > self.STEP_INTERVAL:
                 self.last_snake_move_time = time()
