@@ -315,7 +315,7 @@ class Meteors:
     PYGAME_INFO: any = pg.display.Info()
     WIDTH: int = PYGAME_INFO.current_w
     HEIGHT: int = PYGAME_INFO.current_h
-    NUM_SHIPS = 2
+    NUM_SHIPS = 4
     PLAYING_FIELD_SIZE = -1
     STEP_INTERVAL = 0.15
     INITIAL_DIFFICULTY = 1
@@ -332,8 +332,9 @@ class Meteors:
     
         self.display_surf = display_surf
         self.console_update = console_update
-        self.get_num_players = get_num_players
         self.controllers = controllers
+        #self.NUM_SHIPS = get_num_players()
+        self.get_num_p = lambda: self.NUM_SHIPS
       
         self.rock_speed = 10
         self.fpscap = 60
@@ -354,8 +355,13 @@ class Meteors:
         self.screens = [Screen(pg.Rect(0, 0, self.WIDTH, self.HEIGHT), pg.SRCALPHA)]
         self.clock = pg.time.Clock()
         self.A_Pressed = False
-
-        self.ships = [Ship((randint(0, 69), randint(0, 69)), SHIP_COLOURS[i], self.player_speed) for i in range(self.NUM_SHIPS)]
+        if self.NUM_SHIPS > 0:
+            self.ships = [Ship((randint(0, 69), randint(0, 69)), SHIP_COLOURS[i], self.player_speed) for i in range(self.NUM_SHIPS)]
+        else:
+            self.ships = [Ship((randint(0, 69), randint(0, 69)), SHIP_COLOURS[2], self.player_speed)]
+            self.ships[0].dead = True
+            #self.NUM_SHIPS = 1
+            print(self.ships)
         self.bullets = []
         self.asteroids = []
 
@@ -396,7 +402,7 @@ class Meteors:
         men_lbl.blit(self.main_menu.fonts["large"].render("      B", True, (255, 255, 0)))
 
         def reset_game() -> None:
-            self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers)
+            self.__init__(self.display_surf, self.console_update, self.get_num_p, self.controllers)
 
         while 1:
             for event in pg.event.get():
@@ -480,7 +486,8 @@ class Meteors:
             should_quit = self.console_update()
             if should_quit: return
             
-            for c, controller in enumerate(self.controllers):
+            for c in range(self.NUM_SHIPS):
+                controller = self.controllers[c]
                 stilla = False
                 for event in controller.event.get():
                     if event.type == CONTROLS.DPAD.UP:
@@ -548,11 +555,22 @@ class Meteors:
                     self.show_game_over(alive_snake_index)
                     return
 
-            self.display_surf.blit(self.main_menu.fonts["large"].render(f"Level: {self.difficulty}", True, (0, 255, 0)))
-            self.display_surf.blit(self.main_menu.fonts["large"].render(f"Score: {self.ships[0].score}", True, (250, 156, 28)), (900, 0))
+            total_texts = self.NUM_SHIPS 
+            
+            available_space = self.display_surf.get_width()
+            space_between_texts = (available_space- total_texts) / (total_texts + 1)
+            offset = space_between_texts/10
+            
+            # Display the first text (e.g., Level)
+            self.display_surf.blit(self.main_menu.fonts["large"].render(f"Level: {self.difficulty}", True, (250, 156, 28)), (0, 0))
+            
+            # Display additional text for each ship's score
+            for i in range(self.NUM_SHIPS):
+                x_pos = (i + 1) * space_between_texts + (i + 1)
+                self.display_surf.blit(self.main_menu.fonts["large"].render(f"Score: {self.ships[i].score}", True, SHIP_COLOURS[i]), (x_pos, 0))
+            
 
             #self.console_update()
-            print(self.clock.get_fps())
 
             pg.display.flip()
 
