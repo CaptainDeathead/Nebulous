@@ -180,12 +180,13 @@ class Rock:
 class UFO:
     def __init__(self, x, y, speed):
         self.speed = speed*0.75
-        self.scale = 20
+        self.scale = 25
         self.x = x
         self.y = y
         self.dangerzone = 750
         self.bullets: List[Bullet] = []
         self.cooldown = 1
+        self.quadpoints = [(3*self.scale+self.x, 1*self.scale+self.y), (1*self.scale+self.x, 3*self.scale+self.y), (3*self.scale+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)]
     
     def shoot(self):
         self.bullets.append(Bullet((3*self.scale+self.x, 1*self.scale+self.y), (250, 156, 28), 1, 18, None))
@@ -213,7 +214,7 @@ class UFO:
             
             self.cooldown -= 1
             if self.cooldown == 0:
-                self.cooldown = 8
+                self.cooldown = 10
 
             if closestdistance < self.dangerzone and self.cooldown == 4:
                 self.shoot()
@@ -255,7 +256,7 @@ class UFO:
 
 
         pg.draw.polygon(surface, (250, 156, 28), [(3*self.scale+self.x, 1*self.scale+self.y), (1*self.scale+self.x, 3*self.scale+self.y), (3*self.scale+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)])
-
+        self.quadpoints = [(3*self.scale+self.x, 1*self.scale+self.y), (1*self.scale+self.x, 3*self.scale+self.y), (3*self.scale+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)]
         
 
 class Screen(pg.Surface):
@@ -626,6 +627,12 @@ class Meteors:
                         self.asteroids.pop(i)
                         self.ships[bullet.player].score += 1
                         self.bullets.pop(i2)
+
+            for i, ufo in enumerate(self.UFOs):
+                for i2, bullet in enumerate(self.bullets):
+                    if is_point_inside_triangle(bullet.x, bullet.y, [ufo.quadpoints[0], ufo.quadpoints[1], ufo.quadpoints[2]]) or is_point_inside_triangle(bullet.x, bullet.y, [ufo.quadpoints[2], ufo.quadpoints[3], ufo.quadpoints[1]]):
+                        self.bullets.pop(i2)
+                        self.UFOs.pop(i)
 
             #drawaing and moving
             for ship in self.ships:
