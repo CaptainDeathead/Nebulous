@@ -354,6 +354,7 @@ class Player:
     def __init__(self, controller: Controller) -> None:
         self.controller = controller
         self.ready = False
+        self.last_select_time = 0
 
     @property
     def ready_text(self) -> str:
@@ -399,18 +400,18 @@ class MainMenu:
         self.last_timer_time = 0
         self.timer_first_beep = True
 
-        self.infinite_mode_enabled_lbl = self.fonts["medium"].render("Infite mode enabled... (B)", True, (255, 255, 255))
-        self.infinite_mode_enabled_lbl.blit(self.fonts["medium"].render(" " * len("Infite mode ") + "enabled", True, (0, 255, 0)), (0, 0))
-        self.infinite_mode_enabled_lbl.blit(self.fonts["medium"].render(" " * len("Infite mode enabled... (") + "B", True, (255, 180, 0)), (0, 0))
+        self.infinite_mode_enabled_lbl = self.fonts["medium"].render("Infinite mode enabled... (B)", True, (255, 255, 255))
+        self.infinite_mode_enabled_lbl.blit(self.fonts["medium"].render(" " * len("Infinite mode ") + "enabled", True, (0, 255, 0)), (0, 0))
+        self.infinite_mode_enabled_lbl.blit(self.fonts["medium"].render(" " * len("Infinite mode enabled... (") + "B", True, (255, 180, 0)), (0, 0))
 
-        self.infinite_mode_disabled_lbl = self.fonts["medium"].render("Infite mode disabled... (B)", True, (255, 255, 255))
-        self.infinite_mode_disabled_lbl.blit(self.fonts["medium"].render(" " * len("Infite mode ") + "disabled", True, (255, 0, 0)), (0, 0))
-        self.infinite_mode_disabled_lbl.blit(self.fonts["medium"].render(" " * len("Infite mode disabled... (") + "B", True, (255, 180, 0)), (0, 0))
+        self.infinite_mode_disabled_lbl = self.fonts["medium"].render("Infinite mode disabled... (B)", True, (255, 255, 255))
+        self.infinite_mode_disabled_lbl.blit(self.fonts["medium"].render(" " * len("Infinite mode ") + "disabled", True, (255, 0, 0)), (0, 0))
+        self.infinite_mode_disabled_lbl.blit(self.fonts["medium"].render(" " * len("Infinite mode disabled... (") + "B", True, (255, 180, 0)), (0, 0))
 
         self.timer_start_lbl = self.fonts["medium"].render("Game starting in  ...", True, (255, 255, 255))
         self.timer_end_lbls = [self.fonts["medium"].render(f"                 {i}", True, (0, 0, 255)) for i in range(1, self.TIMER_LENGTH + 1)]
 
-        self.players[0].controller.plugged_in = True
+        #self.players[0].controller.plugged_in = True
         #self.players[1].ready = True
         #self.players[1].controller.plugged_in = True
         #self.players[2].ready = True
@@ -482,14 +483,18 @@ class MainMenu:
                         self.infinite = not self.infinite
 
             for i, controller in enumerate(self.controllers):
+                if time() - self.players[i].last_select_time < 0.3: continue
+
                 for event in controller.event.get():
                     if event.type == CONTROLS.ABXY.A:
                         self.players[i].ready = not self.players[i].ready
+                        self.players[i].last_select_time = time()
 
                     elif event.type == CONTROLS.ABXY.B:
                         if self.timer_active: continue
 
                         self.infinite = not self.infinite
+                        self.players[i].last_select_time = time()
 
             self.draw_player_buttons()
 

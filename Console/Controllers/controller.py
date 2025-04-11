@@ -1,13 +1,11 @@
 import logging
 
 try:
-    from gpiozero import MCP3008
-    import adafruit_mcp3xxx.mcp3008 as MCP
     from adafruit_mcp3xxx.analog_in import AnalogIn
     import RPi.GPIO as GPIO
     TESTING = False
 except:
-    def MCP3008(**args) -> None: ...
+    def AnalogIn(**args) -> None: ...
 
     class GPIO:
         @staticmethod
@@ -81,7 +79,7 @@ class Event:
         self.events = []
 
 class Controller:
-    def __init__(self, port: int, left_channel: MCP3008, right_channel: MCP3008, status_pin: int, testing: bool = TESTING) -> None:
+    def __init__(self, port: int, left_channel: AnalogIn, right_channel: AnalogIn, status_pin: int, testing: bool = TESTING) -> None:
         self.port = port 
         
         self.left_channel = left_channel
@@ -143,7 +141,7 @@ class Controller:
         b = self.split_channel_value(right_ch_value, 0.4)
         a = self.split_channel_value(right_ch_value, 0.6, tolerance = 0.04)
         x = self.split_channel_value(right_ch_value, 0.8, tolerance = 0.15)
-        start = self.split_channel_value(right_ch_value, 1.0, tolerance= 0.04)
+        start = self.split_channel_value(right_ch_value, 1.0, tolerance = 0.04)
 
         if d_up: self.event.register(CONTROLS.DPAD.UP)
         if d_right: self.event.register(CONTROLS.DPAD.RIGHT)

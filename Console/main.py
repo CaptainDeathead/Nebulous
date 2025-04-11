@@ -40,7 +40,7 @@ class Console:
     TARGET_FPS = 60 # Only affects menu
     TESTING = False # Allows testing in a non-console environment
 
-    def __init__(self, testing: bool = False) -> None:
+    def __init__(self, testing: bool = False, flashing: bool = False) -> None:
         """
         Steps to initialize console:
         1. Initialize console input / output devices (io)
@@ -52,6 +52,7 @@ class Console:
 
         self.init = False
         self.TESTING = testing
+        self.FLASHING = flashing
 
         logging.info("Welcome from the console!!!\n")
 
@@ -72,7 +73,7 @@ class Console:
 
         self.update_controllers = False # Allows for cartridge reader to "read check" its status 'safely'.
         self.controller_check_thread = Thread(target=self.check_controllers)
-        self.controller_check_thread.start()
+        #self.controller_check_thread.start()
 
         self.last_cartridge_update_check = 0
         self.cartridge_check_thread = Thread(target=self.check_cartridge)
@@ -143,7 +144,7 @@ class Console:
     def init_cartridges(self) -> None:
         logging.info("Initializing cartridges...")
 
-        self.cartridge_loader = CartridgeLoader(self.on_title_launch)
+        self.cartridge_loader = CartridgeLoader(self.on_title_launch, self.FLASHING)
         self.cartridge_loaded = False
 
     def load_cartidge(self) -> None:
@@ -271,7 +272,7 @@ class Console:
 
         self.io_manager.set_led_on()
         self.io_manager.update()
-        #self.controller_manager.update()
+        self.controller_manager.update()
         
         if self.cartridge_loaded == False: return True
 
@@ -300,11 +301,14 @@ class Console:
 if __name__ == "__main__":
     # Where it all begins...
     testing = False # DO NOT CHANGE THIS VALUE!!!!! USE --test WHEN RUNNING THE SCRIPT FOR TESTING
+    flashing = False
 
     if len(argv) > 1:
         if argv[1] == "--test":
             testing = True
+        elif argv[1] == "--flash":
+            flashing = True
         else:
-            raise Exception(f"Argument {argv[1]} is not recognised! Use --test for console testing.")
+            raise Exception(f"Argument {argv[1]} is not recognised! Use --test for console testing. Use --flash for cartridge flashing.")
 
-    console = Console(testing)
+    console = Console(testing, flashing)
