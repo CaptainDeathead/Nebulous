@@ -30,8 +30,9 @@ class CartridgeLoader:
     SD_BLOCK_SIZE = 512
     WRITE_STRIKES = 3
 
-    def __init__(self, on_title_launch: object) -> None:
+    def __init__(self, on_title_launch: object, flashing: bool = False) -> None:
         self.on_title_launch = on_title_launch
+        self.flashing = flashing
         self.init_failure = False
 
         try:
@@ -205,7 +206,8 @@ class CartridgeLoader:
                 logging.error("Error while invoking cartridge! Likely a syntax error.")
                 self.on_title_launch(self.load_error)
 
-        #self.flash_game()
+        if self.flashing:
+            self.flash_game()
 
         zip_data = b""
 
