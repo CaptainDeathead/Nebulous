@@ -39,7 +39,7 @@ class IOManager:
 
         if not self.testing:
             GPIO.setmode(GPIO.BCM)
-            GPIO.setup(self.CONSOLE_FRONT_POWER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+            GPIO.setup(self.CONSOLE_FRONT_POWER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             GPIO.setup(self.CONSOLE_STATUS_LED_PIN, GPIO.OUT)
         else:
             logging.warning("Console in testing mode so console io is spoofed!")

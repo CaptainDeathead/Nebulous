@@ -190,7 +190,6 @@ class CartridgeLoader:
         if TESTING:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-
             try:
                 #from Games.Pong.consolemain import ConsoleEntry
                 #from Games.Snither.consolemain import ConsoleEntry

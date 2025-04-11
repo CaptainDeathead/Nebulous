@@ -35,6 +35,7 @@ class Console:
     # WARNING: THIS CAN CAUSE INTERUPTIONS TO THE CONTROLLER INPUTS (DELAY + GHOSTING)
     # WARNING: THIS CAN HAVE INCONSISTENT BEHAVIOUR WHEN PAIRED WITH CONTROLLERS (RANDOM FAILED READS / WRITES)
     CARTRIDGE_READ_CHECK = False
+    USE_CONTROLLER_THREAD = False
 
     NUM_CONTROLLER_PORTS = 4
     TARGET_FPS = 60 # Only affects menu
@@ -73,7 +74,8 @@ class Console:
 
         self.update_controllers = False # Allows for cartridge reader to "read check" its status 'safely'.
         self.controller_check_thread = Thread(target=self.check_controllers)
-        #self.controller_check_thread.start()
+        if self.USE_CONTROLLER_THREAD:
+            self.controller_check_thread.start()
 
         self.last_cartridge_update_check = 0
         self.cartridge_check_thread = Thread(target=self.check_cartridge)
@@ -92,7 +94,8 @@ class Console:
         logging.debug("Waiting for threads to shutdown...")
         self.kill_threads = True
         self.cartridge_check_thread.join()
-        self.controller_check_thread.join()
+        if self.USE_CONTROLLER_THREAD:
+            self.controller_check_thread.join()
 
         self.cartridge_loader.unload_cartridge()
 

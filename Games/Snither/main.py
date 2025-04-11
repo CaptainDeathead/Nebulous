@@ -483,9 +483,10 @@ class MainMenu:
                         self.infinite = not self.infinite
 
             for i, controller in enumerate(self.controllers):
-                if time() - self.players[i].last_select_time < 0.3: continue
-
                 for event in controller.event.get():
+                    # Dont have this outside the event loop because it will 'queue' events
+                    if time() - self.players[i].last_select_time < 0.3: continue
+
                     if event.type == CONTROLS.ABXY.A:
                         self.players[i].ready = not self.players[i].ready
                         self.players[i].last_select_time = time()
