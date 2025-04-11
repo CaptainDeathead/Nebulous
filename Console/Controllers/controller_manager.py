@@ -1,12 +1,17 @@
 import logging
 
 try:
-    from gpiozero import Device
-    from gpiozero.pins.pigpio import PiGPIOFactory
+    #from gpiozero import Device
+    #from gpiozero.pins.pigpio import PiGPIOFactory
 
-    Device.pin_factory = PiGPIOFactory()
+    #Device.pin_factory = PiGPIOFactory()
 
-    from gpiozero import MCP3008
+    #from gpiozero import MCP3008
+    import busio
+    import digitalio
+    import board
+    import adafruit_mcp3xxx.mcp3008 as MCP
+    from adafruit_mcp3xxx.analog_in import AnalogIn
 
     import RPi.GPIO as GPIO
 except:
@@ -33,10 +38,23 @@ class ControllerManager:
         try:
             GPIO.setmode(GPIO.BCM)
 
-            self.controllers = [
-                Controller(i, MCP3008(channel=i*2, select_pin=8), MCP3008(channel=i*2+1, select_pin=8), self.CONTROLLER_STATUS_PINS[i], testing=self.TESTING)
-                for i in range(self.NUM_CONTROLLER_PORTS)
-            ]
+            self.spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
+            self.cs = digitalio.DigitalInOut(board.D8)
+            self.mcp = MCP.MCP3008(self.spi, self.cs)
+
+            #self.controllers = [
+            #    Controller(i, MCP3008(channel=i*2, select_pin=8), MCP3008(channel=i*2+1, select_pin=8), self.CONTROLLER_STATUS_PINS[i], testing=self.TESTING)
+            #    for i in range(self.NUM_CONTROLLER_PORTS)
+            #]
+
+            MCPPins = [MCP.P0, MCP.P1, MCP.P2, MCP.P3, MCP.P4, MCP.P5, MCP.P6, MCP.P7]
+
+            self.controllers = []
+
+            for i in range(self.NUM_CONTROLLER_PORTS):
+                a = MCPPins[i*2]
+                b = MCPPins[i*2+1]
+                self.controllers.append(Controller(i, AnalogIn(self.mcp, a), AnalogIn(self.mcp, b), self.CONTROLLER_STATUS_PINS[i], testing=0))
 
         except Exception as e:
             logging.error(f"MCP3008 (Controller Managemnet Device) - Not Found! Error: {e}. No controllers working...")

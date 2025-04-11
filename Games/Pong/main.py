@@ -4,6 +4,7 @@ from Console.Controllers.controller import Controller, CONTROLS
 
 from random import random, randint, uniform, choice
 from math import sin, cos, radians, sqrt
+from threading import Thread
 
 from typing import List, Tuple, Sequence
 
@@ -193,6 +194,9 @@ class Pong:
         #self.controllers[2].plugged_in = True
         #self.controllers[3].plugged_in = True
 
+        self.move_ball_thread = Thread(target=self.move_ball_threaded, daemon=True)
+        self.move_ball_thread.start()
+
         self.main()
     
     def luminance(self, color: Tuple[int]) -> float:
@@ -280,6 +284,10 @@ class Pong:
             bg, fg = self.gen_theme()
             self.set_theme(bg, fg)
 
+    def move_ball_threaded(self) -> None:
+        while 1:
+            self.move_ball(1)
+
     def main(self) -> None:
         while 1:
             dt = self.clock.tick(60) / 1000.0
@@ -309,7 +317,7 @@ class Pong:
             pg.draw.rect(self.display_surf, self.bg_color, screen_ball_rect)
             pg.display.update(screen_ball_rect)
 
-            self.move_ball(dt)
+            #self.move_ball(dt)
 
             screen_ball_rect = (self.ball_rect.x - self.ball_rect.w // 2, self.ball_rect.y - self.ball_rect.h // 2, self.ball_rect.w, self.ball_rect.h)
             pg.draw.rect(self.display_surf, self.fg_color, screen_ball_rect)
