@@ -1,6 +1,7 @@
 import logging
 
 try:
+    import uinput
     from adafruit_mcp3xxx.analog_in import AnalogIn
     import RPi.GPIO as GPIO
     TESTING = False
@@ -53,6 +54,20 @@ class CONTROLS:
             case 8: return "X"
             case 9: return "Y"
 
+    @staticmethod
+    def get_uinput_control_type(control: int) -> ...:
+        match control:
+            case 0: return uinput.BTN_DPAD_UP
+            case 1: return uinput.BTN_DPAD_RIGHT
+            case 2: return uinput.BTN_DPAD_DOWN
+            case 3: return uinput.BTN_DPAD_LEFT
+            case 4: return uinput.BTN_DPAD_SELECT
+            case 5: return uinput.BTN_DPAD_START
+            case 6: return uinput.BTN_A
+            case 7: return uinput.BTN_B
+            case 8: return uinput.BTN_X
+            case 9: return uinput.BTN_Y
+
 class ActualEvent:
     def __init__(self, type: int) -> None:
         self.type = type
@@ -60,6 +75,20 @@ class ActualEvent:
 class Event:
     def __init__(self) -> None:
         self.events = []
+
+        self.device_event_types = [
+            uinput.BTN_A,
+            uinput.BTN_B,
+            uinput.BTN_X,
+            uinput.BTN_Y,
+            uinput.BTN_DPAD_UP,
+            uinput.BTN_DPAD_RIGHT,
+            uinput.BTN_DPAD_DOWN,
+            uinput.BTN_DPAD_LEFT,
+            uinput.BTN_SELECT,
+            uinput.BTN_START
+        ]
+        self.device = uinput.Device(self.device_event_types)
 
     def get(self) -> Generator[any, any, any]:
         # Returns the events in the contoller and clears them
@@ -74,6 +103,11 @@ class Event:
         logging.debug(f"Controller recieved {CONTROLS.get_control_str(event)}.")
 
         self.events.append(ActualEvent(event))
+        self.device.emit(CONTROLS.get_uinput_control_type(event), 1)
+
+    def reset_uinput(self) -> None:
+        for event_type in self.device_event_types:
+            self.device.emit(event_type, 0)
 
     def flush(self) -> None:
         self.events = []
@@ -142,6 +176,8 @@ class Controller:
         a = self.split_channel_value(right_ch_value, 0.6, tolerance = 0.04)
         x = self.split_channel_value(right_ch_value, 0.8, tolerance = 0.15)
         start = self.split_channel_value(right_ch_value, 1.0, tolerance = 0.04)
+
+        self.event.reset_uinput()
 
         if d_up: self.event.register(CONTROLS.DPAD.UP)
         if d_right: self.event.register(CONTROLS.DPAD.RIGHT)
