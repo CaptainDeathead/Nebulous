@@ -8,7 +8,7 @@ from Console.sound import generate_square_wave, generate_sine_wave
 
 from time import time
 from random import randint
-from math import cos, sin, radians
+from math import cos, sin, radians, sqrt
 
 from typing import Sequence, List, Tuple, Dict
 
@@ -28,6 +28,26 @@ FONTS_PATH = "./UI/Fonts"
 
 SHIP_COLOURS = {0: (255, 0, 0), 1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 255, 0)}
 
+def is_point_inside_triangle(px, py, tripoints):
+    # Triangle vertices
+    x1, y1 = tripoints[0]
+    x2, y2 = tripoints[1]
+    x3, y3 = tripoints[2]
+
+    # Calculate the area of the main triangle
+    def area(x1, y1, x2, y2, x3, y3):
+        return abs(x1*(y2 - y3) + x2*(y3 - y1) + x3*(y1 - y2)) / 2
+
+    area_main = area(x1, y1, x2, y2, x3, y3)
+
+    # Calculate the areas of the three smaller triangles formed with the point (px, py)
+    area1 = area(px, py, x2, y2, x3, y3)
+    area2 = area(x1, y1, px, py, x3, y3)
+    area3 = area(x1, y1, x2, y2, px, py)
+
+    # If the sum of the areas of the smaller triangles equals the area of the main triangle, the point is inside
+    return area1 + area2 + area3 == area_main
+
 class DIRECTION:
     UP    = 1
     RIGHT = 4
@@ -38,12 +58,13 @@ class DIRECTION:
     def RANDOM(self) -> int: return randint(1, 4)
 
 class Bullet:
-    def __init__(self, location: Tuple[int, int], color: pg.Color, direction: int, speed: int):
+    def __init__(self, location: Tuple[int, int], color: pg.Color, direction: int, speed: int, player: int|None):
         self.x = location[0]
         self.y = location[1]
         self.color = color
         self.speed = speed
         self.direction = direction
+        self.player = player
 
         if direction > 2:
             self.height = 4
@@ -157,7 +178,86 @@ class Rock:
         pg.draw.circle(surface, (255, 255, 255), (self.x, self.y), self.radius, 30)
 
 class UFO:
-    ...
+    def __init__(self, x, y, speed):
+        self.speed = speed*0.75
+        self.scale = 25
+        self.x = x
+        self.y = y
+        self.dangerzone = 750
+        self.bullets: List[Bullet] = []
+        self.cooldown = 1
+        self.quadpoints = [(3*self.scale+self.x, 1*self.scale+self.y), (1*self.scale+self.x, 3*self.scale+self.y), (3*self.scale+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)]
+    
+    def shoot(self):
+        self.bullets.append(Bullet((3*self.scale+self.x, 1*self.scale+self.y), (250, 156, 28), 1, 18, None))
+        self.bullets.append(Bullet((1*self.scale+self.x, 3*self.scale+self.y), (250, 156, 28), 3, 18, None))
+        self.bullets.append(Bullet((3*self.scale+self.x, 5*self.scale+self.y), (250, 156, 28), 2, 18, None))
+        self.bullets.append(Bullet((5*self.scale+self.x, 3*self.scale+self.y), (250, 156, 28), 4, 18, None))
+    
+    def ai(self, surface, bound_x: int, bound_y: int, player_locations: List[tuple]):
+        if self.x < 5:
+            self.x += self.speed/2
+        elif self.x > bound_x - -5:
+            self.x -= self.speed
+        elif self.y < 5:
+            self.y -= self.speed
+        elif self.y > bound_y -5:
+            self.y += self.speed
+        else:
+            closestlocation = (0, 0)
+            closestdistance = 100000
+            for location in player_locations:
+                d = sqrt((location[0]-self.x)**2 + (location[1]-self.y)**2)
+                if d < closestdistance:
+                    closestlocation = location
+                    closestdistance = d
+            
+            self.cooldown -= 1
+            if self.cooldown == 0:
+                self.cooldown = 10
+
+            if closestdistance < self.dangerzone and self.cooldown == 4:
+                self.shoot()
+
+            # Check if the closest distance is greater than a third of the danger zone
+            if closestdistance > self.dangerzone / 1.5:
+                horizontal_distance = abs(closestlocation[0] - self.x)
+                vertical_distance = abs(closestlocation[1] - self.y)
+            
+                # Prioritize alignment on the x-axis first
+                if horizontal_distance > vertical_distance:
+                    # Try to align on the x-axis, move horizontally
+                    if closestlocation[0] > self.x:
+                        self.x += self.speed
+                    elif closestlocation[0] < self.x:
+                        self.x -= self.speed
+                    
+                    # After moving on the x-axis, adjust the y-axis to avoid getting too close
+                    if closestdistance > self.dangerzone / 1.5:  # Ensure no breaking the danger zone
+                        if closestlocation[1] > self.y:
+                            self.y += self.speed
+                        elif closestlocation[1] < self.y:
+                            self.y -= self.speed
+                else:
+                    # Try to align on the y-axis, move vertically
+                    if closestlocation[1] > self.y:
+                        self.y += self.speed
+                    elif closestlocation[1] < self.y:
+                        self.y -= self.speed
+            
+                    # After moving on the y-axis, adjust the x-axis to avoid getting too close
+                    if closestdistance > self.dangerzone / 1.5:  # Ensure no breaking the danger zone
+                        if closestlocation[0] > self.x:
+                            self.x += self.speed
+                        elif closestlocation[0] < self.x:
+                            self.x -= self.speed
+
+
+
+
+        pg.draw.polygon(surface, (250, 156, 28), [(3*self.scale+self.x, 1*self.scale+self.y), (1*self.scale+self.x, 3*self.scale+self.y), (3*self.scale+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)])
+        self.quadpoints = [(3*self.scale+self.x, 1*self.scale+self.y), (1*self.scale+self.x, 3*self.scale+self.y), (3*self.scale+self.x, 5*self.scale+self.y), (5*self.scale+self.x, 3*self.scale+self.y)]
+        
 
 class Screen(pg.Surface):
     def __init__(self, rect: pg.Rect, flags: int = 0) -> None:
@@ -226,8 +326,10 @@ class MainMenu:
         self.timer_start_lbl = self.fonts["medium"].render("Game starting in  ...", True, (255, 255, 255))
         self.timer_end_lbls = [self.fonts["medium"].render(f"                 {i}", True, (0, 0, 255)) for i in range(self.timer_time, -1, -1)]
 
-        self.players[0].ready = True
         self.players[0].controller.plugged_in = True
+        self.players[1].controller.plugged_in = True
+        self.players[0].ready = True
+        self.players[1].ready = True
 
         self.main()
 
@@ -280,14 +382,16 @@ class MainMenu:
             self.display_surf.fill((0, 0, 0))
             self.clock.tick(60)
 
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    pass
-
             for i, controller in enumerate(self.controllers):
                 for event in controller.event.get():
                     if event.type == CONTROLS.ABXY.A:
                         self.players[i].ready = not self.players[i].ready
+            
+            for event in pg.event.get():    
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_SPACE:
+                        self.players[0].ready = not self.players[0].ready
+                        self.players[1].ready = not self.players[1].ready
 
             self.draw_player_buttons()
 
@@ -310,14 +414,15 @@ class Meteors:
     PYGAME_INFO: any = pg.display.Info()
     WIDTH: int = PYGAME_INFO.current_w
     HEIGHT: int = PYGAME_INFO.current_h
-    NUM_SHIPS = 4
+    NUM_SHIPS = 2
     PLAYING_FIELD_SIZE = -1
     STEP_INTERVAL = 0.15
     INITIAL_DIFFICULTY = 1
     DIFFICULTY_GAP = 6
     DIFFICULTY_CAP = 25
+    TRASH_MODE = True
+    SET_FPS = 8
 
-    TRASH_MODE = False
 
     def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller]) -> None:
         self.console_update = console_update
@@ -326,8 +431,9 @@ class Meteors:
     
         self.display_surf = display_surf
         self.console_update = console_update
-        self.get_num_players = get_num_players
         self.controllers = controllers
+        #self.NUM_SHIPS = get_num_players()
+        self.get_num_p = lambda: self.NUM_SHIPS
       
         self.rock_speed = 10
         self.fpscap = 60
@@ -335,10 +441,10 @@ class Meteors:
         self.bullet_speed = 18
 
         if self.TRASH_MODE:
-            self.rock_speed = 36
-            self.fpscap = 8
-            self.player_speed = 30
-            self.bullet_speed = 67
+            self.fpscap = self.SET_FPS
+            self.rock_speed = ((10*60)/self.fpscap)/2
+            self.player_speed = ((8*60)/self.fpscap)/2
+            self.bullet_speed = ((18*60)/self.fpscap)/2
 
 
         self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers)
@@ -348,10 +454,18 @@ class Meteors:
         self.screens = [Screen(pg.Rect(0, 0, self.WIDTH, self.HEIGHT), pg.SRCALPHA)]
         self.clock = pg.time.Clock()
         self.A_Pressed = False
-
-        self.ships = [Ship((randint(0, 69), randint(0, 69)), SHIP_COLOURS[i], self.player_speed) for i in range(self.NUM_SHIPS)]
+        if self.NUM_SHIPS > 0:
+            self.ships = [Ship((randint(0, 69), randint(0, 69)), SHIP_COLOURS[i], self.player_speed) for i in range(self.NUM_SHIPS)]
+        else:
+            self.ships = [Ship((randint(0, 69), randint(0, 69)), SHIP_COLOURS[2], self.player_speed)]
+            self.ships[0].dead = True
+            #self.NUM_SHIPS = 1
+            print(self.ships)
         self.bullets = []
         self.asteroids = []
+        self.UFOs: List[UFO] = []
+
+        self.UFOactive = randint(3, 14)
 
         self.last_snake_move_time = time()
         self.last_difficulty_increase = time()
@@ -366,8 +480,8 @@ class Meteors:
         go_lbl = self.main_menu.fonts["large"].render("Game Over!", True, (255, 255, 255))
         self.display_surf.blit(go_lbl, (self.WIDTH // 2 - go_lbl.width // 2, 100))
 
-        winner_lbl = self.main_menu.fonts["medium"].render(f"Player {alive_snake_index + 1} survived the longest!", True, (255, 255, 255))
-        winner_lbl.blit(self.main_menu.fonts["medium"].render(f" " * len(f"Player {alive_snake_index + 1} survived the ") + "longest", True, (255, 150, 0)), (0, 0))
+        winner_lbl = self.main_menu.fonts["medium"].render(f"Player {alive_snake_index + 1} scored the most!", True, (255, 255, 255))
+        winner_lbl.blit(self.main_menu.fonts["medium"].render(f" " * len(f"Player {alive_snake_index + 1} ") + "scored", True, (255, 150, 0)), (0, 0))
 
         self.display_surf.blit(winner_lbl, (self.WIDTH // 2 - winner_lbl.width // 2, 100 + go_lbl.height + 50))
 
@@ -390,7 +504,7 @@ class Meteors:
         men_lbl.blit(self.main_menu.fonts["large"].render("      B", True, (255, 255, 0)))
 
         def reset_game() -> None:
-            self.__init__(self.display_surf, self.console_update, self.get_num_players, self.controllers)
+            self.__init__(self.display_surf, self.console_update, self.get_num_p, self.controllers)
 
         while 1:
             for event in pg.event.get():
@@ -422,6 +536,7 @@ class Meteors:
         while 1:
             
             self.clock.tick(self.fpscap)
+            #print(self.clock.get_fps())
 
             for screen in self.screens:
                 screen.fill((0, 0, 0))
@@ -429,6 +544,8 @@ class Meteors:
             if time() - self.last_difficulty_increase >= self.DIFFICULTY_GAP:
                 if self.difficulty < self.DIFFICULTY_CAP:
                     self.difficulty += 1
+                    if self.difficulty == self.UFOactive:
+                        self.UFOs.append(UFO(-50, 500, self.player_speed*2))
                 self.last_difficulty_increase = time()
                 #print(self.difficulty)
 
@@ -444,10 +561,10 @@ class Meteors:
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_a:
                         #shoot bullet
-                        self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed))
+                        self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed, 0))
                     elif event.key == pg.K_n:
                         #shoot bullet
-                        self.bullets.append(Bullet(self.ships[1].nozzle, self.ships[1].color, self.ships[1].direction, self.bullet_speed))
+                        self.bullets.append(Bullet(self.ships[1].nozzle, self.ships[1].color, self.ships[1].direction, self.bullet_speed, 1))
                     elif event.key == pg.K_y:
                         self.ships[0].dead = True
             
@@ -473,7 +590,8 @@ class Meteors:
             should_quit = self.console_update()
             if should_quit: return
             
-            for c, controller in enumerate(self.controllers):
+            for c in range(self.NUM_SHIPS):
+                controller = self.controllers[c]
                 stilla = False
                 for event in controller.event.get():
                     if event.type == CONTROLS.DPAD.UP:
@@ -488,7 +606,7 @@ class Meteors:
                     if event.type == CONTROLS.ABXY.A:
                         if self.ships[c].apressed == False:
                             self.ships[c].apressed == True
-                            self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed))
+                            self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed, c))
                         stilla = True
 
                 if controller.plugged_in and not stilla:
@@ -507,8 +625,14 @@ class Meteors:
                         else:
                             self.num_asteroids -= 0.5
                         self.asteroids.pop(i)
+                        self.ships[bullet.player].score += 1
                         self.bullets.pop(i2)
-                        self.ships[0].score += 1
+
+            for i, ufo in enumerate(self.UFOs):
+                for i2, bullet in enumerate(self.bullets):
+                    if is_point_inside_triangle(bullet.x, bullet.y, [ufo.quadpoints[0], ufo.quadpoints[1], ufo.quadpoints[2]]) or is_point_inside_triangle(bullet.x, bullet.y, [ufo.quadpoints[2], ufo.quadpoints[3], ufo.quadpoints[1]]):
+                        self.bullets.pop(i2)
+                        self.UFOs.pop(i)
 
             #drawaing and moving
             for ship in self.ships:
@@ -522,6 +646,13 @@ class Meteors:
                 bullet.move(self.display_surf)
             for rock in self.asteroids:
                 rock.move(self.display_surf, 1920, 1080)
+            for ufo in self.UFOs:
+                ufo.ai(self.display_surf, 1920, 1080, [(p.x, p.y) for p in self.ships if not p.dead])
+                for b in ufo.bullets:
+                    b.move(self.display_surf)
+                    for ship in self.ships:
+                        if is_point_inside_triangle(b.x, b.y, ship.tripoints):
+                            ship.dead = True
 
             if time() - self.last_snake_move_time > self.STEP_INTERVAL:
                 self.last_snake_move_time = time()
@@ -541,11 +672,22 @@ class Meteors:
                     self.show_game_over(alive_snake_index)
                     return
 
-            self.display_surf.blit(self.main_menu.fonts["large"].render(f"Level: {self.difficulty}", True, (0, 255, 0)))
-            self.display_surf.blit(self.main_menu.fonts["large"].render(f"Score: {self.ships[0].score}", True, (250, 156, 28)), (900, 0))
+            total_texts = self.NUM_SHIPS 
+            
+            available_space = self.display_surf.get_width()
+            space_between_texts = (available_space- total_texts) / (total_texts + 1)
+            offset = space_between_texts/10
+            
+            # Display the first text (e.g., Level)
+            self.display_surf.blit(self.main_menu.fonts["large"].render(f"Level: {self.difficulty}", True, (250, 156, 28)), (0, 0))
+            
+            # Display additional text for each ship's score
+            for i in range(self.NUM_SHIPS):
+                x_pos = (i + 1) * space_between_texts + (i + 1)
+                self.display_surf.blit(self.main_menu.fonts["large"].render(f"Score: {self.ships[i].score}", True, SHIP_COLOURS[i]), (x_pos, 0))
+            
 
             #self.console_update()
-            print(self.clock.get_fps())
 
             pg.display.flip()
 

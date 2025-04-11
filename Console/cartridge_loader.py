@@ -189,14 +189,15 @@ class CartridgeLoader:
         if TESTING:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-            #from Games.Snither.consolemain import ConsoleEntry
-            #from Games.Racer.consolemain import ConsoleEntry
-            #from Games.ShapeRoyale.consolemain import ConsoleEntry
-            #from Games.Meteors.consolemain import ConsoleEntry
-            #from Games.Caliby.consolemain import ConsoleEntry
-            #from Games.Blocky.consolemain import ConsoleEntry
+
             try:
-                from Games.Caliby.consolemain import ConsoleEntry
+                #from Games.Pong.consolemain import ConsoleEntry
+                #from Games.Snither.consolemain import ConsoleEntry
+                #from Games.Racer.consolemain import ConsoleEntry
+                #from Games.ShapeRoyale.consolemain import ConsoleEntry
+                from Games.Meteors.consolemain import ConsoleEntry
+                #from Games.Caliby.consolemain import ConsoleEntry
+                #from Games.Blocky.consolemain import ConsoleEntry
             
                 self.on_title_launch(ConsoleEntry)
                 return
