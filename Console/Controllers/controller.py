@@ -2,6 +2,8 @@ import logging
 
 try:
     from gpiozero import MCP3008
+    import adafruit_mcp3xxx.mcp3008 as MCP
+    from adafruit_mcp3xxx.analog_in import AnalogIn
     import RPi.GPIO as GPIO
     TESTING = False
 except:
@@ -58,7 +60,8 @@ class ActualEvent:
         self.type = type
 
 class Event:
-    events = []
+    def __init__(self) -> None:
+        self.events = []
 
     def get(self) -> Generator[any, any, any]:
         # Returns the events in the contoller and clears them
@@ -96,6 +99,7 @@ class Controller:
         self.plugged_in = False
 
         self.testing = testing
+        #print(self.testing)
 
         self.event = Event()
 
@@ -126,20 +130,20 @@ class Controller:
 
         if not self.plugged_in: return
 
-        left_ch_value = self.left_channel.value
-        right_ch_value = self.right_channel.value
+        left_ch_value = self.left_channel.voltage / 3.3
+        right_ch_value = self.right_channel.voltage / 3.3
 
         d_up = self.split_channel_value(left_ch_value, 0.2)
         d_left = self.split_channel_value(left_ch_value, 0.4)
-        d_down = self.split_channel_value(left_ch_value, 0.6)
-        d_right = self.split_channel_value(left_ch_value, 0.93, tolerance = 0.02)
-        select = self.split_channel_value(left_ch_value, 1.0, tolerance = 0.02)
+        d_down = self.split_channel_value(left_ch_value, 0.6, tolerance = 0.04)
+        d_right = self.split_channel_value(left_ch_value, 0.8, tolerance = 0.15)
+        select = self.split_channel_value(left_ch_value, 1.0, tolerance = 0.04)
 
         y = self.split_channel_value(right_ch_value, 0.2)
         b = self.split_channel_value(right_ch_value, 0.4)
-        a = self.split_channel_value(right_ch_value, 0.6)
-        x = self.split_channel_value(right_ch_value, 0.94, tolerance = 0.02)
-        start = self.split_channel_value(right_ch_value, 1.0, tolerance= 0.02)
+        a = self.split_channel_value(right_ch_value, 0.6, tolerance = 0.04)
+        x = self.split_channel_value(right_ch_value, 0.8, tolerance = 0.15)
+        start = self.split_channel_value(right_ch_value, 1.0, tolerance= 0.04)
 
         if d_up: self.event.register(CONTROLS.DPAD.UP)
         if d_right: self.event.register(CONTROLS.DPAD.RIGHT)
