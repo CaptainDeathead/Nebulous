@@ -113,7 +113,13 @@ class Console:
         logging.info("Initializing display...")
 
         pg.init()
-        pg.mixer.init(size=32)
+
+        try:
+            pg.mixer.init(size=32)
+        except:
+            logging.error("Failed to initialize audio!")
+            logging.error(format_exc())
+
 
         self.pygame_info = pg.display.Info()
         self.WIDTH = self.pygame_info.current_w
@@ -122,6 +128,8 @@ class Console:
         self.screen = pg.display.set_mode((self.WIDTH, self.HEIGHT), pg.FULLSCREEN | pg.DOUBLEBUF | pg.HWSURFACE, display=0)
 
         self.clock = pg.time.Clock()
+
+        pg.mouse.set_visible(False)
 
     def init_menu_interface(self) -> None:
         logging.info("Initializing menu interface...")

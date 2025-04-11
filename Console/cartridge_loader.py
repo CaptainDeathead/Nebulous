@@ -21,6 +21,7 @@ from zipfile import ZipFile
 from time import sleep
 from math import ceil
 from random import randint
+from traceback import format_exc
 
 # TODO: THIS IS ONLY FOR TESTING WITHOUT SD_CARDS IN THE PI
 #TESTING = False
@@ -41,6 +42,7 @@ class CartridgeLoader:
         except Exception as e:
             self.init_failure = True
             logging.error(f"Failed to initialize cartridge (sd) SPI interface!!! Error: {e}! Assuming this is a non-console test so continuing...")
+            print(format_exc())
 
         self.write_strikes = self.WRITE_STRIKES
         self.last_connected_write = b'\x00'
@@ -194,7 +196,7 @@ class CartridgeLoader:
             #from Games.Caliby.consolemain import ConsoleEntry
             #from Games.Blocky.consolemain import ConsoleEntry
             try:
-                from Games.Pong.consolemain import ConsoleEntry
+                from Games.Caliby.consolemain import ConsoleEntry
             
                 self.on_title_launch(ConsoleEntry)
                 return
@@ -228,7 +230,7 @@ class CartridgeLoader:
 
         logging.debug("Extracting .tar.xz file into new /tmp directory...")
         with tarfile.open(fileobj=xz_buffer, mode='r:xz') as tar:
-            tar.extractall(path='/tmp')
+            tar.extractall(path='/tmp/Games')
 
         sys.path.append('/tmp') # Makes all the files in there discoverable.
         sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
