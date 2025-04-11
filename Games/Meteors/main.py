@@ -101,6 +101,7 @@ class Ship:
 
         self.score = 0
         self.color = color
+        self.abing = 10
 
         self.lives = 4
         self.dead = False
@@ -292,9 +293,9 @@ class Player:
         else: return pg.Color(255, 0, 0)
 
 class MainMenu:
-    TIMER_LENGTH = 0
+    TIMER_LENGTH = 5
 
-    def __init__(self, display_surf: pg.Surface, console_update: object, controllers: List[Controller]) -> None:
+    def __init__(self, display_surf: pg.Surface, console_update: object, controllers: List[Controller], num_players:int, autostart) -> None:
         self.display_surf = display_surf
         self.console_update = console_update
         self.controllers = controllers
@@ -326,11 +327,11 @@ class MainMenu:
         self.timer_start_lbl = self.fonts["medium"].render("Game starting in  ...", True, (255, 255, 255))
         self.timer_end_lbls = [self.fonts["medium"].render(f"                 {i}", True, (0, 0, 255)) for i in range(self.timer_time, -1, -1)]
 
-        self.players[0].controller.plugged_in = True
-        self.players[1].controller.plugged_in = True
-        self.players[0].ready = True
-        self.players[1].ready = True
+        for i in range(num_players):
+            self.players[i].controller.plugged_in = True
 
+        if autostart == True:
+            return self.main(True)
         self.main()
 
     def draw_player_buttons(self) -> None:
@@ -377,7 +378,8 @@ class MainMenu:
             if self.timer_time >= self.TIMER_LENGTH:
                 self.start_game = True
 
-    def main(self) -> None:
+    def main(self, autostart=False) -> None:
+        if autostart: self.start_game = True
         while not self.start_game:
             self.display_surf.fill((0, 0, 0))
             self.clock.tick(60)
@@ -392,6 +394,8 @@ class MainMenu:
                     if event.key == pg.K_SPACE:
                         self.players[0].ready = not self.players[0].ready
                         self.players[1].ready = not self.players[1].ready
+                        self.players[2].ready = not self.players[2].ready
+                        self.players[3].ready = not self.players[3].ready
 
             self.draw_player_buttons()
 
@@ -424,7 +428,7 @@ class Meteors:
     SET_FPS = 8
 
 
-    def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller]) -> None:
+    def __init__(self, display_surf: pg.Surface, console_update: object, get_num_players: object, controllers: List[Controller], autostart=False) -> None:
         self.console_update = console_update
         should_quit = self.console_update()
         if should_quit: return
@@ -432,7 +436,7 @@ class Meteors:
         self.display_surf = display_surf
         self.console_update = console_update
         self.controllers = controllers
-        #self.NUM_SHIPS = get_num_players()
+        self.NUM_SHIPS = 4#get_num_players()
         self.get_num_p = lambda: self.NUM_SHIPS
       
         self.rock_speed = 10
@@ -447,7 +451,7 @@ class Meteors:
             self.bullet_speed = ((18*60)/self.fpscap)/2
 
 
-        self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers)
+        self.main_menu = MainMenu(self.display_surf, self.console_update, self.controllers, self.NUM_SHIPS, autostart)
         self.difficulty = self.INITIAL_DIFFICULTY
         self.num_asteroids: float = 0
 
@@ -460,7 +464,7 @@ class Meteors:
             self.ships = [Ship((randint(0, 69), randint(0, 69)), SHIP_COLOURS[2], self.player_speed)]
             self.ships[0].dead = True
             #self.NUM_SHIPS = 1
-            print(self.ships)
+            #print(self.ships)
         self.bullets = []
         self.asteroids = []
         self.UFOs: List[UFO] = []
@@ -503,14 +507,17 @@ class Meteors:
         men_lbl = self.main_menu.fonts["large"].render("Press B to edit settings.", True, (255, 255, 255))
         men_lbl.blit(self.main_menu.fonts["large"].render("      B", True, (255, 255, 0)))
 
-        def reset_game() -> None:
-            self.__init__(self.display_surf, self.console_update, self.get_num_p, self.controllers)
+        def reset_game(autostart: bool) -> None:
+            self.__init__(self.display_surf, self.console_update, self.get_num_p, self.controllers, autostart)
 
         while 1:
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_SPACE:
-                        reset_game()
+                        reset_game(True)
+                        return
+                    elif event.key == pg.K_BACKSPACE:
+                        reset_game(False)
                         return
 
             for event in pg.event.get():
@@ -522,10 +529,10 @@ class Meteors:
             for controller in self.controllers:
                 for event in controller.event.get():
                     if event.type == CONTROLS.START:
-                        reset_game()
+                        reset_game(True)
                         return
                     if event.type== CONTROLS.ABXY.B:
-                        reset_game()
+                        reset_game(False)
                         return
 
             self.console_update()
@@ -559,10 +566,10 @@ class Meteors:
                     pass
                 
                 if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_a:
-                        #shoot bullet
-                        self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed, 0))
-                    elif event.key == pg.K_n:
+                    #if event.key == pg.K_a:
+                    #    #shoot bullet
+                    #    self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed, 0))
+                    if event.key == pg.K_n:
                         #shoot bullet
                         self.bullets.append(Bullet(self.ships[1].nozzle, self.ships[1].color, self.ships[1].direction, self.bullet_speed, 1))
                     elif event.key == pg.K_y:
@@ -577,6 +584,8 @@ class Meteors:
                 self.ships[0].move_down()
             elif keys[pg.K_LEFT]:
                 self.ships[0].move_left()
+            if keys[pg.K_a]:
+                self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed, 0))
 
             if keys[pg.K_u]:
                 self.ships[1].move_up()
@@ -592,7 +601,6 @@ class Meteors:
             
             for c in range(self.NUM_SHIPS):
                 controller = self.controllers[c]
-                stilla = False
                 for event in controller.event.get():
                     if event.type == CONTROLS.DPAD.UP:
                         self.ships[c].move_up()
@@ -603,16 +611,12 @@ class Meteors:
                     elif event.type == CONTROLS.DPAD.LEFT:
                         self.ships[c].move_left()
                     
-                    if event.type == CONTROLS.ABXY.A:
-                        if self.ships[c].apressed == False:
-                            self.ships[c].apressed == True
-                            self.bullets.append(Bullet(self.ships[0].nozzle, self.ships[0].color, self.ships[0].direction, self.bullet_speed, c))
-                        stilla = True
-
-                if controller.plugged_in and not stilla:
-                    self.ships[c].apressed = False
-
-
+                    if self.ships[c].abing != 0:
+                        self.ships[c].abing -= 1
+                    
+                    if self.ships[c].abing == 0 and event.type == CONTROLS.ABXY.A:
+                        self.bullets.append(Bullet(self.ships[c].nozzle, self.ships[c].color, self.ships[c].direction, self.bullet_speed, c))
+                        self.ships[c].abing = 4
 
             #doing the thing with the thing 
             #collisoas
