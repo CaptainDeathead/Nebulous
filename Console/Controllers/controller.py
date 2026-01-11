@@ -61,8 +61,8 @@ class CONTROLS:
             case 1: return uinput.BTN_DPAD_RIGHT
             case 2: return uinput.BTN_DPAD_DOWN
             case 3: return uinput.BTN_DPAD_LEFT
-            case 4: return uinput.BTN_DPAD_SELECT
-            case 5: return uinput.BTN_DPAD_START
+            case 4: return uinput.BTN_SELECT
+            case 5: return uinput.BTN_START
             case 6: return uinput.BTN_A
             case 7: return uinput.BTN_B
             case 8: return uinput.BTN_X
@@ -90,6 +90,8 @@ class Event:
         ]
         self.device = uinput.Device(self.device_event_types)
 
+        self.events_this_frame = []
+
     def get(self) -> Generator[any, any, any]:
         # Returns the events in the contoller and clears them
         for event in self.events:
@@ -97,17 +99,19 @@ class Event:
             self.events.remove(event)
 
     def register(self, event: int) -> None:
-        for event_class in self.events:
-            if event_class.type == event: return
-
         logging.debug(f"Controller recieved {CONTROLS.get_control_str(event)}.")
 
         self.events.append(ActualEvent(event))
+        self.events_this_frame.append(event)
+
         self.device.emit(CONTROLS.get_uinput_control_type(event), 1)
 
     def reset_uinput(self) -> None:
-        for event_type in self.device_event_types:
-            self.device.emit(event_type, 0)
+        for i in range(10):
+            if i not in self.events_this_frame:
+                self.device.emit(CONTROLS.get_uinput_control_type(i), 0)
+
+        self.events_this_frame = []
 
     def flush(self) -> None:
         self.events = []
@@ -177,8 +181,6 @@ class Controller:
         x = self.split_channel_value(right_ch_value, 0.8, tolerance = 0.15)
         start = self.split_channel_value(right_ch_value, 1.0, tolerance = 0.04)
 
-        self.event.reset_uinput()
-
         if d_up: self.event.register(CONTROLS.DPAD.UP)
         if d_right: self.event.register(CONTROLS.DPAD.RIGHT)
         if d_down: self.event.register(CONTROLS.DPAD.DOWN)
@@ -190,3 +192,5 @@ class Controller:
         if x: self.event.register(CONTROLS.ABXY.X)
         if y: self.event.register(CONTROLS.ABXY.Y)
         if start: self.event.register(CONTROLS.START)
+
+        self.event.reset_uinput()
