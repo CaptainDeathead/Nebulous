@@ -84,7 +84,7 @@ class Console:
         self.init = True
         logging.info("Console startup complete!")
 
-        if self.TESTING: self.load_cartidge()
+        if self.TESTING or 1: self.load_cartidge()
 
         self.main()
 

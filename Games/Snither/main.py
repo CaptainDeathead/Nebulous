@@ -456,16 +456,24 @@ class MainMenu:
         self.timer_first_beep = True
 
     def check_game_start(self) -> None:
+        num_players = 0
+
         for player in self.players:
             if player.controller.plugged_in and not player.ready:
                 self.reset_timer()
                 return
-            
-            timer_time = self.TIMER_LENGTH - (time() - self.timer_start_time)
-            self.timer_active = True
+            elif player.controller.plugged_in:
+                num_players += 1
 
-            if timer_time <= 1:
-                self.start_game = True
+        if num_players == 0:
+            self.reset_timer()
+            return
+            
+        timer_time = self.TIMER_LENGTH - (time() - self.timer_start_time)
+        self.timer_active = True
+
+        if timer_time <= 1:
+            self.start_game = True
 
     def main(self) -> None:
         while not self.start_game:
@@ -487,11 +495,19 @@ class MainMenu:
                     # Dont have this outside the event loop because it will 'queue' events
                     if time() - self.players[i].last_select_time < 0.3: continue
 
-                    if event.type == CONTROLS.ABXY.A:
+                    if event.type == CONTROLS.START:
+                        controller.plugged_in = not controller.plugged_in
+                        self.players[i].ready = False
+                        self.players[i].last_select_time = time()
+
+                    elif event.type == CONTROLS.ABXY.A:
+                        if not controller.plugged_in: continue
+
                         self.players[i].ready = not self.players[i].ready
                         self.players[i].last_select_time = time()
 
                     elif event.type == CONTROLS.ABXY.B:
+                        if not controller.plugged_in: continue
                         if self.timer_active: continue
 
                         self.infinite = not self.infinite

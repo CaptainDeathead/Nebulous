@@ -187,18 +187,20 @@ class CartridgeLoader:
         raise Exception("Cartridge load failure! Likely a syntax error.")
 
     def load_cartridge(self) -> None:
-        if TESTING:
+        if TESTING or 1:
             sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
             try:
                 #from Games.Pong.consolemain import ConsoleEntry
-                #from Games.Snither.consolemain import ConsoleEntry
+                from Games.Snither.consolemain import ConsoleEntry
                 #from Games.Racer.consolemain import ConsoleEntry
                 #from Games.ShapeRoyale.consolemain import ConsoleEntry
-                from Games.Meteors.consolemain import ConsoleEntry
+                #from Games.Meteors.consolemain import ConsoleEntry
                 #from Games.Caliby.consolemain import ConsoleEntry
                 #from Games.Blocky.consolemain import ConsoleEntry
-            
+                #from Games.SuperMario3.consolemain import ConsoleEntry
+                #from Games.MicroMachines.consolemain import ConsoleEntry
+
                 self.on_title_launch(ConsoleEntry)
                 return
             except Exception as e:

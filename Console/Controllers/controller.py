@@ -1,6 +1,7 @@
 import logging
 
 try:
+    import uinput
     from adafruit_mcp3xxx.analog_in import AnalogIn
     import RPi.GPIO as GPIO
     TESTING = False
@@ -53,6 +54,20 @@ class CONTROLS:
             case 8: return "X"
             case 9: return "Y"
 
+    @staticmethod
+    def get_uinput_control_type(control: int) -> ...:
+        match control:
+            case 0: return uinput.BTN_DPAD_UP
+            case 1: return uinput.BTN_DPAD_RIGHT
+            case 2: return uinput.BTN_DPAD_DOWN
+            case 3: return uinput.BTN_DPAD_LEFT
+            case 4: return uinput.BTN_SELECT
+            case 5: return uinput.BTN_START
+            case 6: return uinput.BTN_A
+            case 7: return uinput.BTN_B
+            case 8: return uinput.BTN_X
+            case 9: return uinput.BTN_Y
+
 class ActualEvent:
     def __init__(self, type: int) -> None:
         self.type = type
@@ -61,6 +76,22 @@ class Event:
     def __init__(self) -> None:
         self.events = []
 
+        self.device_event_types = [
+            uinput.BTN_A,
+            uinput.BTN_B,
+            uinput.BTN_X,
+            uinput.BTN_Y,
+            uinput.BTN_DPAD_UP,
+            uinput.BTN_DPAD_RIGHT,
+            uinput.BTN_DPAD_DOWN,
+            uinput.BTN_DPAD_LEFT,
+            uinput.BTN_SELECT,
+            uinput.BTN_START
+        ]
+        self.device = uinput.Device(self.device_event_types)
+
+        self.events_this_frame = []
+
     def get(self) -> Generator[any, any, any]:
         # Returns the events in the contoller and clears them
         for event in self.events:
@@ -68,12 +99,19 @@ class Event:
             self.events.remove(event)
 
     def register(self, event: int) -> None:
-        for event_class in self.events:
-            if event_class.type == event: return
-
         logging.debug(f"Controller recieved {CONTROLS.get_control_str(event)}.")
 
         self.events.append(ActualEvent(event))
+        self.events_this_frame.append(event)
+
+        self.device.emit(CONTROLS.get_uinput_control_type(event), 1)
+
+    def reset_uinput(self) -> None:
+        for i in range(10):
+            if i not in self.events_this_frame:
+                self.device.emit(CONTROLS.get_uinput_control_type(i), 0)
+
+        self.events_this_frame = []
 
     def flush(self) -> None:
         self.events = []
@@ -118,7 +156,7 @@ class Controller:
     def poll_events(self) -> None:
         if self.testing: return
 
-        self.plugged_in = GPIO.input(self.status_pin)
+        #self.plugged_in = GPIO.input(self.status_pin)
 
         if self.plugged_in != self.last_plugged_in:
             if self.plugged_in: self.on_plug()
@@ -126,7 +164,7 @@ class Controller:
 
             self.last_plugged_in = self.plugged_in
 
-        if not self.plugged_in: return
+        #if not self.plugged_in: return
 
         left_ch_value = self.left_channel.voltage / 3.3
         right_ch_value = self.right_channel.voltage / 3.3
@@ -154,3 +192,5 @@ class Controller:
         if x: self.event.register(CONTROLS.ABXY.X)
         if y: self.event.register(CONTROLS.ABXY.Y)
         if start: self.event.register(CONTROLS.START)
+
+        self.event.reset_uinput()
