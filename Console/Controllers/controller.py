@@ -156,7 +156,7 @@ class Controller:
     def poll_events(self) -> None:
         if self.testing: return
 
-        self.plugged_in = GPIO.input(self.status_pin)
+        #self.plugged_in = GPIO.input(self.status_pin)
 
         if self.plugged_in != self.last_plugged_in:
             if self.plugged_in: self.on_plug()
@@ -164,7 +164,7 @@ class Controller:
 
             self.last_plugged_in = self.plugged_in
 
-        if not self.plugged_in: return
+        #if not self.plugged_in: return
 
         left_ch_value = self.left_channel.voltage / 3.3
         right_ch_value = self.right_channel.voltage / 3.3
